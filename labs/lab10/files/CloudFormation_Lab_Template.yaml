@@ -1,0 +1,87 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  EC2InstanceType:
+    Type: String
+    Default: 't2.micro'
+  EC2AMI:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+
+Resources:
+  SecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: !Sub 'Internal Security group for ${AWS::StackName}'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Ref AWS::StackName
+
+  # InstanceRole:
+  #   Type: "AWS::IAM::Role"
+  #   Properties:
+  #     RoleName: "aws-cfn-instance-role"
+  #     AssumeRolePolicyDocument:
+  #       Version: "2012-10-17"
+  #       Statement:
+  #         Effect: Allow
+  #         Principal:
+  #           Service:
+  #             - "ec2.amazonaws.com"
+  #         Action: sts:AssumeRole
+  #     ManagedPolicyArns:
+  #       - arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess
+  #     Tags:
+  #       - Key: Name
+  #         Value: !Ref AWS::StackName
+
+  # InstanceProfile:
+  #   Type: "AWS::IAM::InstanceProfile"
+  #   Properties:
+  #     Roles:
+  #       - Ref: InstanceRole
+
+  Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref EC2AMI
+      InstanceType: !Ref EC2InstanceType
+      # IamInstanceProfile: !Ref InstanceProfile
+      SecurityGroupIds:
+        - !GetAtt SecurityGroup.GroupId 
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+
+          # Send script output to /tmp so we can debug boot failures
+          exec > /tmp/userdata.log 2>&1 
+
+          # Installing the latest updates
+          yum update -y       
+
+          # Installing and launching a simple httpd server
+          yum install -y httpd.x86_64
+          systemctl start httpd.service
+          systemctl enable httpd.service
+
+          # Writing HTML file to serve on the httpd server
+          echo "Hello World from Educative" > /var/www/html/index.html
+      Tags:
+        - Key: Name
+          Value: !Ref AWS::StackName
+
+Outputs:
+  InstanceEndpoint:
+    Description: The DNS name for the created instance
+    Value: !Sub "http://${Instance.PublicDnsName}:80" 
+    Export:
+      Name: InstanceEndpoint
