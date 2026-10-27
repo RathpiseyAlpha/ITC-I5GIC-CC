@@ -10,6 +10,7 @@ Course materials for **GICI5CC — Introduction to Cloud Computing**, academic y
 ```
 ITC-I5GIC-CC/
 ├── README.md                  # ← You are here
+├── slides/                    # Weekly lecture slides (PDF)
 └── labs/
     ├── SETUP.md               # AWS Academy Learner Lab, GitHub repository, how to submit
     ├── INDEX.md               # Complete lab index
@@ -21,6 +22,27 @@ ITC-I5GIC-CC/
     ├── lab2/ … lab11/         # Same layout (there is no Lab 4)
     └── lab10/files/           # CloudFormation templates and Terraform starter files
 ```
+
+## 🖥️ Lecture slides
+
+The weekly lecture slides as PDF. Week 8 has no lecture.
+
+| Week | Topic | Slides |
+|:---:|-------|:----:|
+| 1 | Introduction to cloud computing | [Week-01.pdf](slides/Week-01.pdf) |
+| 2 | Deployment and service models | [Week-02.pdf](slides/Week-02.pdf) |
+| 3 | Cloud infrastructure, virtualization and EC2 | [Week-03.pdf](slides/Week-03.pdf) |
+| 4 | Cloud scaling and load balancing | [Week-04.pdf](slides/Week-04.pdf) |
+| 5 | Cloud storage | [Week-05.pdf](slides/Week-05.pdf) |
+| 6 | Networking and Amazon VPC | [Week-06.pdf](slides/Week-06.pdf) |
+| 7 | Databases | [Week-07.pdf](slides/Week-07.pdf) |
+| 9 | Serverless and microservices | [Week-09.pdf](slides/Week-09.pdf) |
+| 10 | Security and AWS IAM | [Week-10.pdf](slides/Week-10.pdf) |
+| 11 | Cost management | [Week-11.pdf](slides/Week-11.pdf) |
+| 12 | DevOps and Infrastructure as Code | [Week-12.pdf](slides/Week-12.pdf) |
+| 13 | AI/ML services in the cloud | [Week-13.pdf](slides/Week-13.pdf) |
+| 14 | Starting your cloud journey | [Week-14.pdf](slides/Week-14.pdf) |
+| — | Capstone project brief | [Capstone-Project.pdf](slides/Capstone-Project.pdf) |
 
 ## 🔬 Labs
 
