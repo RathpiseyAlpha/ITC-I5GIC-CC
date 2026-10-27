@@ -156,7 +156,7 @@ You now create a trigger that invokes your function every time an object is uplo
 6. Check the acknowledgment for **Recursive invocation**.
 7. Click **Add**.
 
-> **Why only PUT?** The function writes to the same bucket that triggers it. An upload is a *PUT* event; the function's `copy_object` is a *Copy* event. Because the trigger listens only to PUT, the function's own copy does not start the function again. With **All object create events**, every copy would trigger a new invocation: an endless loop.
+> **Why only PUT?** The function writes to the same bucket that triggers it. An upload is a *PUT* event; the function's `copy_object` is a *Copy* event. Because the trigger listens only to PUT, the function's own copy does not start the function again. With **All object create events**, every copy would start the function again. With this code, the second run tries to copy the object onto itself, which S3 refuses, so it fails and Lambda retries it; with code that writes a new key each time, it would become an endless loop.
 
 ## Task 4 — Test the Trigger
 

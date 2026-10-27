@@ -1,6 +1,6 @@
-# Cloud Lab 2 Challenge Submission — Secure S3 Bucket
+# Cloud Lab 3 Challenge Submission — Secure S3 Bucket
 
-Copy this template to `cc-lab-YOUR_ID/lab2-challenge/README.md` in your own repository. Follow [the challenge](lab2-challenge.md). Put your screenshots in `lab2-challenge/images/` and your policy in `lab2-challenge/bucket-policy.json`.
+Copy this template to `cc-lab-YOUR_ID/lab3-challenge/README.md` in your own repository. Follow [the challenge](lab3-challenge.md). Put your screenshots in `lab3-challenge/images/` and your policy in `lab3-challenge/bucket-policy.json`.
 
 - **Student name:**
 - **Student ID:**

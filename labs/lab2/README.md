@@ -1,4 +1,4 @@
-# Cloud Lab 2 Submission — AWS Storage Options
+# Cloud Lab 2 Submission — Load Balancer and Auto Scaling
 
 Copy this template to `cc-lab-YOUR_ID/lab2/README.md` in your own repository. Follow [the instructions](lab2-instruction.md). Put your screenshots in `lab2/images/` with the file names below.
 
@@ -9,63 +9,59 @@ Copy this template to `cc-lab-YOUR_ID/lab2/README.md` in your own repository. Fo
 
 ---
 
-## Part 2.1 — Amazon S3
+## Security groups
 
-### Bucket list
+![LoadBalancerSecurityGroup](images/01-sg-load-balancer.png)
 
-![S3 bucket list](images/01-s3-bucket-list.png)
+![LaunchTemplateSecurityGroup](images/02-sg-launch-template.png)
 
-### Uploaded files
+## Target group
 
-![Objects in the bucket](images/02-s3-objects.png)
+![LoadBalancerTargetGroup](images/03-target-group.png)
 
-### Static website
+![Health checks](images/04-health-checks.png)
 
-![Static website in the browser](images/03-s3-website.png)
+## Application Load Balancer
 
----
+![Load balancer list](images/05-load-balancer-list.png)
 
-## Part 2.2 — Amazon EBS
+![Load balancer details](images/06-load-balancer-details.png)
 
-### Volumes page
+## Launch template
 
-![Backup Volume in use](images/04-ebs-volumes.png)
+![AutoScalingLaunchTemplate](images/07-launch-template.png)
 
-### Attached volume (`lsblk`)
+## Auto Scaling group
 
-![lsblk output](images/05-ebs-lsblk.png)
+![Auto Scaling groups](images/08-asg-list.png)
 
-Which device name did your volume get (`xvdf`, `nvme1n1`, ...)?
+![Auto Scaling group details](images/09-asg-details.png)
 
-### File read on instance-2
+## Load balancing test
 
-![testfile.txt on instance-2](images/06-ebs-second-instance.png)
+![First request](images/10-browser-1.png)
 
----
+![Second request, different host](images/11-browser-2.png)
 
-## Part 2.3 — Amazon EFS
+## Simulated application failure
 
-### File system and mount targets
+![Stopping httpd](images/12-stop-httpd.png)
 
-![clab-efs and its mount targets](images/07-efs-file-system.png)
+![Target unhealthy or draining](images/13-target-unhealthy.png)
 
-### File created on instance-1
+![New target healthy](images/14-target-replaced.png)
 
-![Writing the file on instance-1](images/08-efs-write.png)
-
-### File listed on instance-3
-
-![Reading the file on instance-3](images/09-efs-read.png)
+About how many minutes passed between stopping `httpd` and the new instance becoming healthy?
 
 ---
 
 ## Questions
 
-1. After you turned on static website hosting, the endpoint first answered **403 Forbidden**. Why, and what changed after you added the bucket policy?
-2. `testfile.txt` was still there after you moved **Backup Volume** to `instance-2`. What would have happened to a file saved on `instance-1`'s **root** volume after terminating `instance-1`?
-3. Why did you run `mkfs` on `instance-1` but not on `instance-2`?
-4. Why could `instance-1` and `instance-3` use the EFS file system at the same time, when an EBS volume had to be detached first? Why did they have to be in the subnets of the mount targets?
-5. For each need, choose S3, EBS or EFS and give one reason: (a) a website's images, (b) the disk of a database server, (c) a folder shared by several web servers.
+1. Why does the page show a different host name when you refresh it?
+2. After you stopped `httpd`, the instance was still *running* in EC2, but the target group marked it *unhealthy*. What did the health check test, and why did the instance fail it?
+3. Who replaced the failed instance: the load balancer, the target group, or the Auto Scaling group? Explain the role of each one.
+4. With desired 2, minimum 2 and maximum 3, how many instances run normally? In what situation could there be 3?
+5. The instances' security group allows HTTP from anywhere. How could you change it so that the instances accept HTTP **only** from the load balancer?
 
 ## Problems and how I solved them (optional)
 
@@ -75,7 +71,7 @@ One suggestion an AI tool gave you and how you checked it.
 
 ## Clean up
 
-- [ ] Instances `instance-1`, `instance-2`, `instance-3` terminated.
-- [ ] `clab-efs` and **Backup Volume** deleted.
-- [ ] Security groups `efs-sg` and `ec2instances-sg` deleted.
-- [ ] S3 bucket emptied and deleted.
+- [ ] `MyAutoScalingGroup` deleted and its instances terminated.
+- [ ] `AutoScalingLaunchTemplate` deleted.
+- [ ] `MyLoadBalancer` and `LoadBalancerTargetGroup` deleted.
+- [ ] Both security groups deleted.

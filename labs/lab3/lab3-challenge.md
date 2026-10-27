@@ -1,12 +1,12 @@
-# Cloud Lab 2 Challenge — Secure and Manage an Amazon S3 Bucket for Public Content
+# Cloud Lab 3 Challenge — Secure and Manage an Amazon S3 Bucket for Public Content
 
 | Item | Details |
 |---|---|
 | Work | Individual, in your own AWS Academy Learner Lab |
 | Region | US East (N. Virginia) `us-east-1` |
 | Format | Challenge: requirements only, **no step-by-step instructions** |
-| Submit | `cc-lab-YOUR_ID/lab2-challenge/` in your GitHub repository `CC-GIC-YOUR_ID`: `README.md`, `bucket-policy.json` and 6 screenshots (a 7th is recommended) |
-| Before you start | Finish [Lab 2](lab2-instruction.md), Part 2.1 |
+| Submit | `cc-lab-YOUR_ID/lab3-challenge/` in your GitHub repository `CC-GIC-YOUR_ID`: `README.md`, `bucket-policy.json` and 6 screenshots (a 7th is recommended) |
+| Before you start | Finish [Lab 3](lab3-instruction.md), Part 2.1 |
 
 > **Scenario:** A tourism board wants to publish its travel offers on Amazon S3. Only the offers in the `public/` folder may be visible to the world; everything else in the bucket stays private. The content team updates pages often and wants old versions kept, but cheaply.
 
@@ -76,15 +76,15 @@ After your screenshots, empty the bucket (including all object versions: turn on
 1. Make the folder and add your files:
 
    ```bash
-   mkdir -p ~/cc-gic-YOUR_ID/cc-lab-YOUR_ID/lab2-challenge/images
+   mkdir -p ~/cc-gic-YOUR_ID/cc-lab-YOUR_ID/lab3-challenge/images
    ```
 
-2. Copy the [challenge report template](challenge-README.md) to `cc-lab-YOUR_ID/lab2-challenge/README.md` and fill it in.
+2. Copy the [challenge report template](challenge-README.md) to `cc-lab-YOUR_ID/lab3-challenge/README.md` and fill it in.
 3. Check the structure:
 
    ```text
    cc-lab-YOUR_ID/
-   └── lab2-challenge/
+   └── lab3-challenge/
        ├── README.md
        ├── bucket-policy.json
        └── images/
@@ -102,6 +102,6 @@ After your screenshots, empty the bucket (including all object versions: turn on
    ```bash
    cd ~/cc-gic-YOUR_ID
    git add .
-   git commit -m "Lab 2 challenge: secure S3 bucket"
+   git commit -m "Lab 3 challenge: secure S3 bucket"
    git push
    ```

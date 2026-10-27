@@ -1,306 +1,545 @@
-# Cloud Lab 3 — Amazon VPC with Public and Private Subnets (Hands-on)
+# Cloud Lab 3 — Understanding AWS Storage Options (Hands-on)
 
 | Item | Details |
 |---|---|
 | Work | Individual, in your own AWS Academy Learner Lab |
 | Region | US East (N. Virginia) `us-east-1` |
-| Submit | `cc-lab-YOUR_ID/lab3/` in your GitHub repository `CC-GIC-YOUR_ID`: `README.md` and 11 screenshots |
+| Parts | **2.1** Amazon S3 · **2.2** Amazon EBS · **2.3** Amazon EFS |
+| Submit | `cc-lab-YOUR_ID/lab3/` in your GitHub repository `CC-GIC-YOUR_ID`: `README.md` and 9 screenshots |
+| Challenge | [S3 challenge lab](lab3-challenge.md), submitted separately in `cc-lab-YOUR_ID/lab3-challenge/` |
 
-> **Overview:** Amazon Virtual Private Cloud (Amazon VPC) is a virtual network that you define, in which you launch AWS resources such as EC2 instances. You decide its address space and configuration to limit access to your resources. In this lab you create a VPC, secure it with a public and a private subnet, manage routing between subnets, and give internet access to EC2 instances in both subnets.
+> **Overview:** AWS storage services store and retrieve data over the network. They differ in scalability, payment plans and the type of data they store. In this lab you work with three of them: you create an **S3** bucket, upload files and host a static website; you create an **EBS** volume and mount it to an EC2 instance; and you mount one **EFS** file system to two instances to see that it is shared. Along the way you meet security groups and resource-based policies.
 
 ## Lab Objectives
 
 After this lab, you can:
 
-1. Create a VPC and attach an internet gateway to it.
-2. Create public and private subnets and explain the difference.
-3. Edit route tables and subnet associations to send traffic to an internet gateway or a NAT gateway.
-4. Create a NAT gateway so instances in a private subnet can reach the internet.
-5. Run commands on an instance with AWS Systems Manager to test its internet access.
+1. Create an S3 bucket, upload objects, and host a static website with a bucket policy.
+2. Create an EBS volume, attach it to an EC2 instance, format and mount it, and move it to another instance.
+3. Create an EFS file system with mount targets and mount it on two instances at the same time.
+4. Compare S3, EBS and EFS and choose one for a given need.
 
 The infrastructure you build in this lab:
 
 ![High-level architecture of Lab 3](figures/fig01.png)
 
-| Part | Tasks |
-|---|---|
-| Create a VPC with an internet gateway | 1. Create a VPC · 2. Create an internet gateway and attach it |
-| Test the internet via a public subnet | 3. Create a public subnet · 4. Update the route table · 5. Create an EC2 instance · 6. Run a test command |
-| Test the internet via a private subnet | 7. Create a private subnet · 8. Create a NAT gateway · 9. Create a route table · 10. Launch an EC2 instance · 11. Run a test command |
-| Conclusion | 12. Clean up |
-
 ## Screenshots in this lab
 
-| File | Task | What it shows |
+| File | Part | What it shows |
 |---|---|---|
-| `01-vpc.png` | 1 | `lab3-vpc` with CIDR `10.0.0.0/24` |
-| `02-internet-gateway.png` | 2 | `lab3-internet-gateway` *Attached* to `lab3-vpc` |
-| `03-public-subnet.png` | 3 | `lab3-public-subnet` with CIDR `10.0.0.0/25` |
-| `04-public-route-table.png` | 4 | Route `0.0.0.0/0` → `lab3-internet-gateway` |
-| `05-ec2-public.png` | 5 | `lab3-ec2-01` running in `lab3-public-subnet` with a public IP |
-| `06-test-public.png` | 6 | Run Command *Success* for `sudo yum update -y` on `lab3-ec2-01` |
-| `07-private-subnet.png` | 7 | `lab3-private-subnet` with CIDR `10.0.0.128/25` |
-| `08-nat-gateway.png` | 8 | `lab3-nat-gateway` in `lab3-public-subnet` with an Elastic IP |
-| `09-private-route-table.png` | 9 | `lab3-custom-route-table` with route `0.0.0.0/0` → `lab3-nat-gateway` |
-| `10-ec2-private.png` | 10 | `lab3-ec2-02` running in `lab3-private-subnet`, no public IP |
-| `11-test-private.png` | 11 | Run Command *Success* for `sudo yum update -y` on `lab3-ec2-02` |
+| `01-s3-bucket-list.png` | 2.1 | The S3 bucket list with your `static-web-bucket...` bucket |
+| `02-s3-objects.png` | 2.1 | `index.html` and `error.html` inside your bucket |
+| `03-s3-website.png` | 2.1 | The static website endpoint open in the browser |
+| `04-ebs-volumes.png` | 2.2 | The Volumes page with **Backup Volume** *In-use* |
+| `05-ebs-lsblk.png` | 2.2 | Instance Connect terminal with `lsblk` listing the attached volume |
+| `06-ebs-second-instance.png` | 2.2 | `cat testfile.txt` on **instance-2** after moving the volume |
+| `07-efs-file-system.png` | 2.3 | The EFS console with `clab-efs` and its mount targets |
+| `08-efs-write.png` | 2.3 | Terminal on **instance-1** creating the file in the EFS mount |
+| `09-efs-read.png` | 2.3 | Terminal on **instance-3** listing the same file with `ls` |
 
 Every console screenshot must show your Learner Lab user name at the top-right.
 
 ## Getting Started
 
-**Amazon VPC** creates virtual networks in the cloud to isolate and secure AWS resources. Inside a VPC you launch resources such as EC2 instances and configure public and private subnets, route tables, and internet access.
-
-The plan: create a VPC and attach an internet gateway. Create a public subnet and route its traffic to the internet gateway. Launch an instance in the public subnet and check that it reaches the internet. Then create a private subnet and a NAT gateway in the public subnet, route the private subnet's traffic through the NAT gateway, launch an instance in the private subnet and check its internet access.
+AWS storage services provide on-demand, scalable and customizable storage. Individuals and companies keep their data in the cloud, while the cloud provider provisions and maintains the infrastructure. Common uses are backup and recovery, data lakes, analysis of large amounts of data, and access to data over the network.
 
 General guidelines:
 
-- Work in **`us-east-1`**. Click the Region menu at the top-right next to your user name and select **US East (N. Virginia) us-east-1**.
+- Work in **`us-east-1`**. On the console, click the Region menu at the top-right next to your user name and select **US East (N. Virginia)**.
 - Use the **resource names** given in the lab. Other names may not be allowed.
 - Your permissions are limited. Some console pages may show *insufficient privileges* messages; you can ignore them.
 
-## Task 1 — Create a VPC
+# Part 2.1 — Amazon Simple Storage Service (S3)
+
+**Amazon S3** stores data as **objects** in **buckets**. A bucket can store any data: images, videos, files and more. S3 is used to host data for cloud-native applications, keep data lake backups, save log files, and host static websites.
+
+**Structure of a bucket.** A bucket has a flat structure, not a hierarchy: all data is stored at the same level. Each bucket has a unique name and each object a unique key, so the content can be reached by a unique URL. Objects hold both the data and metadata, such as the last-modified date, size and content type. A single object can be up to 5 TB.
+
+**Security and access management.** Access to a bucket is controlled with access control lists (ACLs), Block Public Access, and resource-based policies.
+
+- **ACLs** set read and write authorization for objects.
+- **Block Public Access** prevents accidental exposure of data. It is on by default and applies whatever the other settings are. Turning it off is **not enough** to make a bucket public: you also need a bucket policy that allows public access.
+- A **resource-based policy**, such as a bucket policy, works like an IAM policy: it lists allowed and denied actions on resources, for which users.
+
+**Static website hosting.** You upload the website's files to a bucket and turn on static website hosting; S3 gives you a URL for the site. The bucket must contain an `index.html` document, and every folder must contain its own `index.html`. If `www.my-site.com` is the endpoint, it shows the root `index.html`; `www.my-site.com/movies/` shows `movies/index.html`.
+
+## Task 1 — Create an S3 Bucket and Upload Files
 
 ![Infrastructure after Task 1](figures/fig02.png)
 
-1. In the console, search for **VPC** and open the VPC dashboard.
-2. In the left menu, under **Virtual private cloud**, click **Your VPCs**, then **Create VPC**.
-3. Under **VPC settings**:
-   - Resources to create: **VPC only**. You create the other network resources yourself later.
-   - Name tag: **`lab3-vpc`**
-   - IPv4 CIDR block: **IPv4 CIDR manual input**, `10.0.0.0/24`
-   - IPv6 CIDR block: **No IPv6 CIDR block**
-   - Tenancy: **Default**
-4. Leave **Tags** as they are and click **Create VPC**.
+### Create a bucket
 
-> 📸 **Screenshot `01-vpc.png`:** `lab3-vpc` with its IPv4 CIDR `10.0.0.0/24`.
+1. Search for **S3** in the console and open it.
+2. Click **Create bucket**.
+3. Check that the Region is **US East (N. Virginia) us-east-1**.
+4. Enter a bucket name that starts with `static-web-bucket`. Bucket names are globally unique, so add allowed characters, for example your AWS account ID: `static-web-bucket-123456789012`.
+5. Uncheck **Block all public access**, and check the box that acknowledges the warning. You restrict access with a bucket policy later.
+6. Keep the default settings for the rest, scroll down and click **Create bucket**.
 
-## Task 2 — Create an Internet Gateway and Attach It to the VPC
+### Upload files to the bucket
 
-An **internet gateway** is the VPC component that lets resources in the VPC connect to the internet. It passes both IPv4 and IPv6 traffic.
+Create two files on your computer with this content.
+
+**`index.html`**
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Educative Webpage</title>
+  <style>
+    /* Add CSS for image resizing */
+    .flex-container {
+      display: flex;
+      background-color: #F2F2F2;
+    }
+    .flex-item {
+      flex: 1;
+      padding: 20px;
+      text-align: center;
+    }
+    .image {
+      max-width: 100%;
+      max-height: 150px;
+    }
+  </style>
+</head>
+<body>
+  <header style="background-color: #E05243; color: #fff; padding: 20px; text-align: center;">
+    <h2>Understanding AWS Storage Options - From Zero to Hero</h2>
+  </header>
+  <div style="padding: 20px;">
+    <h3 style="font-size: 16px;">Hello from Educative!</h3>
+  </div>
+  <h2>AWS Storage Options</h2>
+  <div class="flex-container">
+    <div class="flex-item">
+      <h3>Simple Storage Service (S3)</h3>
+      <img src="https://www.educative.io/udata/cloudlab/X1YGqprb88o/AWS%20S3.png" alt="S3 Image" class="image" />
+    </div>
+    <div class="flex-item">
+      <h3>Elastic Block Storage (EBS)</h3>
+      <img src="https://www.educative.io/udata/cloudlab/W96bpqXEoEr/AWS-EBS.svg.png" alt="EBS Image" class="image" />
+    </div>
+    <div class="flex-item">
+      <h3>Elastic File System (EFS)</h3>
+      <img src="https://www.educative.io/udata/cloudlab/wMGnaVgQ7Yr/AWS-EFS.png" alt="EFS Image" class="image" />
+    </div>
+  </div>
+  <footer style="background-color: #E05243; color: #fff; padding: 10px; text-align: center;">
+    &copy; 2023 Educative
+  </footer>
+</body>
+</html>
+```
+
+**`error.html`**
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Educative Webpage</title>
+</head>
+<body>
+  <header style="background-color: #1F1E63; color: #fff; padding: 20px; text-align: center;">
+    <h1>Understanding AWS Storage Options - From Zero to Hero</h1>
+  </header>
+  <div style="padding: 20px;">
+    <p style="font-size: 16px;">Oops Error!</p>
+  </div>
+  <footer style="background-color: #1F1E63; color: #fff; padding: 10px; text-align: center;">
+    &copy; 2023 Educative
+  </footer>
+</body>
+</html>
+```
+
+1. Open your bucket. In **Files and folders**, click **Add files** and select `index.html` and `error.html`.
+2. Click **Upload**. When the upload status page shows success, click **Close**.
+
+> 📸 **Screenshots:** `01-s3-bucket-list.png` (the bucket list showing your bucket) and `02-s3-objects.png` (the two files inside the bucket).
+
+## Task 2 — Enable Static Website Hosting
+
+In this task you turn on static website hosting and add a bucket policy.
 
 ![Infrastructure after Task 2](figures/fig03.png)
 
-1. In the left menu, click **Internet gateways**, then **Create internet gateway**.
-2. Name tag: `lab3-internet-gateway`. Click **Create internet gateway**.
-3. Click **Actions → Attach to VPC**, select `lab3-vpc`, and click **Attach internet gateway**.
+### Enable static website hosting
 
-> 📸 **Screenshot `02-internet-gateway.png`:** `lab3-internet-gateway` with state *Attached* and VPC `lab3-vpc`.
+1. Open your bucket and choose the **Properties** tab.
+2. Scroll to **Static website hosting** and click **Edit**.
+3. Choose **Enable**. Keep the hosting type **Host a static website**.
+4. Index document: `index.html`. Error document: `error.html`. File names are case-sensitive.
+5. Click **Save changes**.
+6. Back in **Properties → Static website hosting**, open the **bucket website endpoint** in a new tab.
 
-## Task 3 — Create a Public Subnet
+You get **403 Forbidden**: the bucket is not public yet. Turning off Block Public Access is not enough; the bucket also needs a policy.
 
-![Infrastructure after Task 3](figures/fig04.png)
+### Configure the bucket policy
 
-1. In the left menu, click **Subnets**, then **Create subnet**.
-2. VPC ID: `lab3-vpc`.
-3. Subnet settings:
-   - Subnet name: `lab3-public-subnet`
-   - Availability Zone: **US East (N. Virginia) / us-east-1a**
-   - IPv4 CIDR block: `10.0.0.0/25`
-4. Click **Create subnet**.
+1. Open the bucket's **Permissions** tab. It shows **Block public access (bucket settings)** and **Bucket policy**.
+2. Under **Bucket policy**, click **Edit**.
+3. Paste this policy. Replace `<your-bucket-arn>` with your bucket's ARN, which is shown above the policy editor:
 
-> 📸 **Screenshot `03-public-subnet.png`:** `lab3-public-subnet` with CIDR `10.0.0.0/25`.
-
-## Task 4 — Update Route Table and Subnet Associations
-
-You now send all traffic of the public subnet that is not for the VPC to the internet gateway. This gives the subnet's instances internet access, and is what makes the subnet **public**.
-
-![Infrastructure after Task 4](figures/fig05.png)
-
-1. In the left menu, click **Route tables**. Type `lab3-vpc` in the search bar to find the route table of your VPC. Click the refresh icon if it does not appear.
-2. Click the route table ID. Under **Routes**, click **Edit routes**.
-
-   There is one route: destination `10.0.0.0/24`, target `local`. This default route lets instances in the VPC talk to each other with private IP addresses.
-
-3. Click **Add route**:
-   - Destination: `0.0.0.0/0`
-   - Target: **Internet Gateway**, then `lab3-internet-gateway`
-4. Click **Save changes**.
-5. Now associate the route table with the public subnet explicitly. Open the **Subnet associations** tab and click **Edit subnet associations** under **Explicit subnet associations**.
-6. Select `lab3-public-subnet` and click **Save associations**.
-
-> 📸 **Screenshot `04-public-route-table.png`:** the route table's **Routes** tab with `0.0.0.0/0` → `lab3-internet-gateway`.
-
-To test internet access in the next tasks, you use the instance profile **`LabInstanceProfile`** (role `LabRole`). It allows **AWS Systems Manager (SSM)** to run commands on the instance.
-
-## Task 5 — Create an EC2 Instance in the Public Subnet
-
-An **EC2 instance** is a virtual server in the AWS cloud that you configure for your needs.
-
-![Infrastructure after Task 5](figures/fig06.png)
-
-1. Search for **EC2** and open it. Click **Instances → Launch instances**.
-2. Name: `lab3-ec2-01`.
-3. AMI: **Amazon Linux 2 AMI (HVM) - Kernel 5.10, SSD Volume Type**, architecture **64-bit (x86)**.
-4. Instance type: **t2.micro**.
-5. Key pair: **Proceed without a key pair (Not recommended)**.
-6. **Network settings → Edit:**
-   - VPC: `lab3-vpc`
-   - Subnet: `lab3-public-subnet`
-   - Auto-assign public IP: **Enable**, so the instance gets a public IP address and can talk to the internet
-   - Firewall (security groups): **Create security group**
-   - Click **Remove** under **Inbound security group rules** to remove the existing rule. SSM does not need any inbound rule.
-7. Storage: **8 GiB gp2**.
-8. Expand **Advanced details**. IAM instance profile: **`LabInstanceProfile`**.
-9. Leave the rest and click **Launch instance**.
-
-> 📸 **Screenshot `05-ec2-public.png`:** `lab3-ec2-01` *Running*, with its subnet `lab3-public-subnet` and its public IPv4 address visible.
-
-## Task 6 — Run a Command to Test the Internet
-
-**AWS Systems Manager (SSM)** manages AWS resources such as EC2 instances by automating operational tasks from one place. Its **Run Command** feature runs commands on an instance remotely, for example to install software or updates.
-
-![Infrastructure after Task 6](figures/fig07.png)
-
-You use SSM to download security patches and updates to the instance. If the download succeeds, the instance has internet access.
-
-1. Search for **Systems Manager** and open it.
-2. In the left menu, under **Node Management**, click **Run Command**, then **Run command**.
-3. Under **Command document**, search for `runshellscript` and select **AWS-RunShellScript**.
-4. Under **Command parameters**, type:
-
-   ```bash
-   sudo yum update -y
+   ```json
+   {
+       "Version": "2012-10-17",
+       "Statement": [
+           {
+               "Sid": "Statement1",
+               "Principal": "*",
+               "Effect": "Allow",
+               "Action": [
+                   "s3:GetObject"
+               ],
+               "Resource": "<your-bucket-arn>/*"
+           }
+       ]
+   }
    ```
 
-5. Under **Target selection**: choose **Choose instances manually** and select `lab3-ec2-01`.
+4. Click **Save changes**.
 
-   > **Note:** The instance can take around 10 minutes to appear in this list.
+What the policy says:
 
-6. Under **Output options**, uncheck **Enable an S3 bucket**.
-7. Click **Run**.
+| Element | Meaning here |
+|---|---|
+| `Sid` | A unique ID for the statement |
+| `Principal` | Who may act: `*` means everyone |
+| `Effect` | `Allow` the action (the other value is `Deny`) |
+| `Action` | `s3:GetObject`: read objects from the bucket |
+| `Resource` | Every object (`/*`) in your bucket, given by the bucket ARN |
 
-The status shows *In Progress*. After a while, click the refresh icon: **Status** and **Detailed Status** show **Success**. The instance reached the internet to download the updates.
+Go back to **Properties → Static website hosting**, copy the endpoint URL and open it. You now see the `index.html` page.
 
-> 📸 **Screenshot `06-test-public.png`:** the Run Command page with *Success* for `lab3-ec2-01`.
+> 📸 **Screenshot `03-s3-website.png`:** the browser showing your page, with the website endpoint in the address bar.
 
-## Task 7 — Create a Private Subnet
+# Part 2.2 — Amazon Elastic Block Store (EBS)
 
-You now create a private subnet with its own instance, and a NAT gateway in the public subnet. The private subnet sends its internet traffic to the NAT gateway, which sends it on to the internet gateway.
+**Amazon EBS** stores data in **blocks**. An EBS volume is unformatted, raw disk storage that can be attached to an EC2 instance, like a hard disk.
 
-![Infrastructure after Task 7](figures/fig08.png)
+Every EC2 instance gets a root EBS volume at launch, which is deleted when the instance is terminated. You can create **additional** volumes and attach them to instances. Additional volumes **persist independently** of the instance: if you terminate the instance, the data stays on the volume, and you can attach the volume to another instance to read it. An instance can have several volumes.
 
-1. Open the **VPC** dashboard and click **Subnets → Create subnet**.
-2. VPC ID: `lab3-vpc`.
-3. Subnet settings:
-   - Subnet name: `lab3-private-subnet`
-   - Availability Zone: **US East (N. Virginia) / us-east-1a**
-   - IPv4 CIDR block: `10.0.0.128/25`
-4. Click **Create subnet**.
+![EBS volumes attached to an EC2 instance](figures/fig04.png)
 
-> 📸 **Screenshot `07-private-subnet.png`:** `lab3-private-subnet` with CIDR `10.0.0.128/25`.
+An EBS volume can only be used in the Availability Zone where it was created. To use the data elsewhere, you create a **snapshot**, a backup that holds what is needed to restore the volume, and copy it.
 
-## Task 8 — Create a NAT Gateway
+| Type of volume | Use case |
+|---|---|
+| General Purpose SSD (gp2, gp3) | A balance of performance and price; the most common choice |
+| Provisioned IOPS SSD (io1, io2) | Intensive input/output workloads |
+| Throughput Optimized HDD (st1) | Low-cost magnetic storage for sequential access |
+| Cold HDD (sc1) | Data that is accessed infrequently |
 
-The NAT gateway lets the instance in the private subnet reach the internet. The instance sends traffic to the NAT gateway, and the NAT gateway sends it through the internet gateway.
+## Task 3 — Launch Two EC2 Instances
 
-![Infrastructure after Task 8](figures/fig09.png)
+An instance needs a **security group**, a virtual firewall that controls inbound and outbound traffic, for example to allow SSH.
 
-1. In the left menu, click **NAT gateways**, then **Create NAT gateway**.
-2. Under **NAT gateway settings**:
-   - Name: `lab3-nat-gateway`
-   - Subnet: **`lab3-public-subnet`**
-   - Connectivity type: **Public**
-   - Elastic IP allocation ID: click **Allocate Elastic IP**
-3. Click **Create NAT gateway**.
+![Infrastructure after Task 3](figures/fig05.png)
 
-> **Note:** The NAT gateway starts in the state *Pending*. You can use it only when it is *Available*.
+The diagram shows a VPC and a public subnet. A **Virtual Private Cloud (VPC)** is an isolated virtual network in AWS in which you control IP address ranges, subnets and gateways. A **subnet** is a range of IP addresses inside a VPC, placed in one Availability Zone.
 
-> 📸 **Screenshot `08-nat-gateway.png`:** `lab3-nat-gateway` *Available*, in `lab3-public-subnet`, with its Elastic IP.
+### Create a security group
 
-## Task 9 — Create a Route Table and Update Routes and Subnet Associations
+1. Open **EC2** and click **Security Groups**, then **Create security group**.
+2. Name: `ec2instances-sg`. Description: `Allows inbound SSH Traffic`.
+3. Under **Inbound rules**, click **Add rule**: type **SSH**, source **Anywhere-IPv4**.
+4. Review and click **Create security group**.
 
-Both subnets currently use the same route table (check the **Route table** column on the **Subnets** page). The private subnet needs its own route table, because its traffic goes to the NAT gateway, while the public subnet's traffic goes to the internet gateway.
+### Launch the instances
 
-![Infrastructure after Task 9](figures/fig10.png)
+1. Click **Instances → Launch instances**.
+2. Name: `instance-1`.
+3. AMI: in **Quick Start**, select **Ubuntu**, then **Ubuntu Server 24.04 LTS (HVM), SSD Volume Type**, architecture **64-bit (x86)**.
+4. Instance type: **t3.medium**.
+5. Key pair: **Proceed without a key pair**.
+6. **Network settings → Edit:** keep the default VPC and select the default subnet in **us-east-1a**.
+7. **Select existing security group:** `ec2instances-sg`.
+8. Storage: **8 GiB gp3**. Keep the default **Advanced details**.
+9. Click **Launch instance**, then **View all instances**. Within a few minutes the state is **Running**. Refresh the page if you do not see the instance.
 
-1. Click **Route tables → Create route table**.
-2. Name: `lab3-custom-route-table`. VPC: `lab3-vpc`. Click **Create route table**.
-3. Under **Routes**, click **Edit routes**. The default `10.0.0.0/24` → `local` route is already there.
-4. Click **Add route**:
-   - Destination: `0.0.0.0/0`
-   - Target: **NAT Gateway**, then `lab3-nat-gateway`
-5. Click **Save changes**.
-6. Open **Subnet associations → Edit subnet associations**, select `lab3-private-subnet`, and click **Save associations**.
+Repeat these steps to launch a second instance named **`instance-2`**, also in **us-east-1a**.
 
-> 📸 **Screenshot `09-private-route-table.png`:** `lab3-custom-route-table` with `0.0.0.0/0` → `lab3-nat-gateway`.
+## Task 4 — Create an EBS Volume
 
-## Task 10 — Launch an EC2 Instance in the Private Subnet
+![Infrastructure after Task 4](figures/fig06.png)
 
-AWS does not move an existing instance to another subnet, so you launch a new one.
+1. In the EC2 sidebar, click **Volumes** under **Elastic Block Store**.
+2. You see the root volumes of `instance-1` and `instance-2`. They are deleted when their instances are terminated. Rename them so you can tell them apart: hover over the **Name** cell, click the pencil, and name them `Root Volume 1` and `Root Volume 2`.
+3. Click **Create volume** and set:
+   - Volume type: **General Purpose SSD (gp3)**
+   - Size: **8 GiB**
+   - Availability Zone: **us-east-1a**, the same as your instances
+   - No tags are needed.
+4. Click **Create volume**.
 
-![Infrastructure after Task 10](figures/fig11.png)
+After a moment the new volume appears with the state **Available**. Name it **`Backup Volume`**.
+
+## Task 5 — Attach and Mount the EBS Volume
+
+![Infrastructure after Task 5](figures/fig07.png)
+
+### Attach the volume
+
+1. On the **Volumes** page, check that **Backup Volume** is **Available**. Select it and click **Actions → Attach volume**.
+2. Instance: `instance-1`. Device name: choose **Specify a custom device name** and enter `/dev/sdf`.
+3. Click **Attach volume**. The state changes to **In-use**.
+
+### Connect with EC2 Instance Connect
+
+1. Select `instance-1` and click **Connect**.
+2. Keep **Connect using EC2 Instance Connect** and click **Connect**. A terminal opens.
+
+### Find the volume
+
+List the block devices of the instance:
+
+```bash
+lsblk
+```
+
+The output looks like this:
+
+```text
+NAME     MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
+loop0      7:0    0  24.6M  1 loop /snap/amazon-ssm-agent/7528
+...
+xvda     202:0    0     8G  0 disk
+├─xvda1  202:1    0   7.9G  0 part /
+├─xvda14 202:14   0     4M  0 part
+└─xvda15 202:15   0   106M  0 part /boot/efi
+xvdf     202:80   0     8G  0 disk
+```
+
+The root volume is `xvda`. Your **Backup Volume** is the 8 GiB disk with no partitions and no mount point, here `xvdf`: Linux renames `/dev/sdf` to `/dev/xvdf`.
+
+> **Note:** On newer instance types such as **t3**, EBS volumes appear as NVMe devices: the root volume is `nvme0n1` and your volume is probably **`nvme1n1`**. Use the name that **your** `lsblk` shows in the commands below.
+
+> 📸 **Screenshot `05-ebs-lsblk.png`:** the terminal with the `lsblk` output showing the attached volume.
+
+### Format and mount the volume
+
+The new volume has no file system yet. Create an `ext4` file system on it, make a mount point, and mount it (replace `xvdf` if your device name is different):
+
+```bash
+sudo mkfs -t ext4 /dev/xvdf
+sudo mkdir /mnt/my-ebs-volume
+sudo mount /dev/xvdf /mnt/my-ebs-volume
+```
+
+You could also add the volume to `/etc/fstab` so it is mounted automatically at boot.
+
+### Add data to the volume
+
+```bash
+sudo su
+cd /mnt/my-ebs-volume
+echo "This is a test file" > testfile.txt
+```
+
+The file stays on the volume even if `instance-1` is terminated.
+
+> 📸 **Screenshot `04-ebs-volumes.png`:** the **Volumes** page showing **Backup Volume** *In-use*.
+
+## Task 6 — Attach the Volume to Another EC2 Instance
+
+Data on an EBS volume persists independently of the instance. You now unmount the volume, detach it from `instance-1`, attach and mount it on `instance-2`, and read the file.
+
+![Infrastructure after Task 6](figures/fig08.png)
+
+### Unmount and detach
+
+1. On `instance-1`, leave the mount folder and unmount it:
+
+   ```bash
+   cd ~
+   sudo umount -l /mnt/my-ebs-volume
+   ```
+
+2. In the EC2 console, open **Volumes**, select **Backup Volume** and click **Actions → Detach volume**. Type `detach` and click **Detach**.
+3. Wait until the state is **Available**. Refresh the page if it does not change.
+
+### Attach and mount on instance-2
+
+1. Attach **Backup Volume** to **`instance-2`** with device name `/dev/sdf`, as in Task 5.
+2. Connect to `instance-2` with EC2 Instance Connect and run `lsblk` to find the device name.
+3. Mount the volume and read the file. **Do not run `mkfs` again**: it would erase the volume.
+
+   ```bash
+   sudo mkdir /mnt/my-ebs-volume
+   sudo mount /dev/xvdf /mnt/my-ebs-volume
+   cd /mnt/my-ebs-volume
+   cat testfile.txt
+   ```
+
+The file and its contents survived the move.
+
+> 📸 **Screenshot `06-ebs-second-instance.png`:** the `instance-2` terminal showing `cat testfile.txt` and its output.
+
+# Part 2.3 — Amazon Elastic File System (EFS)
+
+**Amazon EFS** is a file storage service: AWS provides the file system, so you do not build and manage your own. It uses the **Network File System (NFS)** protocol.
+
+EFS allows **parallel access**: EC2 instances, ECS tasks and Lambda functions can use the same EFS file system at the same time. It uses file locking and synchronous reads and writes to keep data consistent. It scales to petabytes and charges only for the storage used, with no setup fee. EFS is serverless and Regionally resilient, with options to replicate data within and across Availability Zones.
+
+**How EFS works.** Instances connect to an EFS file system through **mount targets**. A mount target gives an IP address for the NFS endpoint. Each instance connects through the mount target in its own Availability Zone.
+
+![An EC2 instance connected to EFS through a mount target](figures/fig09.png)
+
+In this part you create an EFS file system, mount it on two instances, write a file from one and read it from the other.
+
+## Task 7 — Create an EFS File System
+
+![Infrastructure after Task 7](figures/fig10.png)
+
+### Create a security group for NFS
+
+All inbound traffic to a mount target is blocked by default. This security group allows NFS traffic.
+
+1. Open **EC2 → Security Groups → Create security group**.
+2. Name: `efs-sg`. Description: `Allows inbound NFS Traffic`. VPC: the **default VPC**.
+3. **Add rule:** type **NFS**, source **Anywhere-IPv4**.
+4. Click **Create security group**.
+
+### Create the file system
+
+1. Search for **EFS** and open it. Click **Create file system**.
+2. Name: `clab-efs`. VPC: the **default VPC**.
+3. Click **Customize** and set the file system settings:
+   - **File system type:** **Regional**. Regional keeps data in several Availability Zones for durability and availability; One Zone keeps it in one zone and costs less.
+   - **Automatic backups:** uncheck **Enable automatic backups**. You delete this file system at the end of the lab.
+   - **Lifecycle management:** this moves files that are rarely used to cheaper storage classes after a number of days. Set **Transition into Archive** to **None**.
+   - **Encryption:** keep the default (encrypted).
+   - **Performance settings:** *Bursting* scales throughput with the amount stored, for simple needs; *Enhanced* gives more flexibility and higher throughput. Select **Enhanced** with **Elastic (Recommended)**.
+4. Click **Next** to open **Network access**. Keep only **two** mount targets, in **us-east-1a** and **us-east-1b**. For both, remove the default security group and select **`efs-sg`**.
+5. Click **Next**. Leave the **File system policy** empty and click **Next**.
+6. Review and click **Create**.
+
+Copy the **File system ID** of `clab-efs` (it looks like `fs-0123456789abcdef0`) and keep it: you need it to mount the file system.
+
+> 📸 **Screenshot `07-efs-file-system.png`:** the EFS console with `clab-efs` and its two mount targets (open the file system and its **Network** tab).
+
+## Task 8 — Launch a Third EC2 Instance
+
+The instances must be in the same subnets as the mount targets. `instance-1` and `instance-2` are in us-east-1a; you now launch `instance-3` in **us-east-1b**.
+
+![Infrastructure after Task 8](figures/fig11.png)
 
 1. Open **EC2 → Instances → Launch instances**.
-2. Name: `lab3-ec2-02`.
-3. AMI: **Amazon Linux 2 AMI (HVM) - Kernel 5.10, SSD Volume Type**, **64-bit (x86)**. Instance type: **t2.micro**.
-4. Key pair: **Proceed without a key pair (Not recommended)**.
-5. **Network settings → Edit:**
-   - VPC: `lab3-vpc`
-   - Subnet: **`lab3-private-subnet`**
-   - Auto-assign public IP: **Disable**. This instance must not get a public IP address.
-   - Firewall: **Create security group**, and **Remove** the existing inbound rule.
-6. Storage: **8 GiB gp2**.
-7. **Advanced details → IAM instance profile:** **`LabInstanceProfile`**.
-8. Click **Launch instance**.
+2. Name: `instance-3`.
+3. AMI: **Ubuntu**, architecture **64-bit (x86)**. Instance type: **t3.medium**.
+4. Key pair: **Proceed without a key pair**.
+5. **Network settings → Edit:** default VPC, and the default subnet in **us-east-1b**.
+6. **Select existing security group:** `ec2instances-sg`.
+7. Storage: **8 GiB gp3**.
+8. Click **Launch instance**, then **View all instances**, and wait for **Running**.
 
-> 📸 **Screenshot `10-ec2-private.png`:** `lab3-ec2-02` *Running*, in `lab3-private-subnet`, with no public IPv4 address.
+## Task 9 — Mount the EFS File System
 
-## Task 11 — Run a Command to Test the Internet
+You install the Amazon EFS client on the instances, create a mount point and mount the file system on it.
 
-![Infrastructure after Task 11](figures/fig12.png)
+![Infrastructure after Task 9](figures/fig12.png)
 
-Repeat Task 6 for the private instance:
+1. Connect to `instance-1` with EC2 Instance Connect.
+2. Install the Amazon EFS client (`amazon-efs-utils`) by building it from source:
 
-1. Open **Systems Manager → Run Command → Run command**.
-2. Document: **AWS-RunShellScript**. Command: `sudo yum update -y`.
-3. Target: **Choose instances manually**, select `lab3-ec2-02`.
-4. Uncheck **Enable an S3 bucket** and click **Run**.
+   ```bash
+   sudo apt-get update
+   sudo apt-get -y install git binutils rustc cargo pkg-config libssl-dev
+   git clone https://github.com/aws/efs-utils
+   cd efs-utils
+   ./build-deb.sh
+   sudo apt-get -y -q install ./build/amazon-efs-utils*deb
+   ```
 
-After a while, refresh: **Status** and **Detailed Status** show **Success**. The private instance reached the internet through the NAT gateway in the public subnet, without having a public IP address.
+   | Line | What it does |
+   |---|---|
+   | 1 | Updates the package lists |
+   | 2 | Installs Git (to clone the source) and the tools needed to build the package |
+   | 3 | Clones `efs-utils` from GitHub. The Amazon EFS client simplifies mounting EFS, adds encryption in transit, and improves performance on Linux |
+   | 4 | Moves into the `efs-utils` folder |
+   | 5 | Builds the `amazon-efs-utils` package |
+   | 6 | Installs the package |
 
-> 📸 **Screenshot `11-test-private.png`:** the Run Command page with *Success* for `lab3-ec2-02`.
+   The build takes a few minutes.
 
-## Task 12 — Clean Up
+3. Create a mount point:
 
-Take all screenshots **before** you clean up. A NAT gateway costs money every hour it exists, so do not skip this.
+   ```bash
+   sudo mkdir /home/ubuntu/efsmount/
+   ```
 
-**Terminate the EC2 instances**
+4. Mount the file system. Replace `<fs-id>` with your file system ID:
 
-1. Open **EC2 → Instances**, select `lab3-ec2-01` and `lab3-ec2-02`.
-2. Click **Instance state → Terminate instance**, then **Terminate**.
+   ```bash
+   cd .. && sudo mount -t efs <fs-id> efsmount/
+   ```
 
-**Delete the routes**
+5. Repeat steps 1 to 4 on **`instance-3`**.
 
-The gateways can only be deleted when no route uses them.
+## Task 10 — Share a File Between Instances
 
-1. Open **VPC → Route tables** and search for `lab3-vpc`.
-2. For each route table found: click its ID, click **Edit routes**, click **Remove** next to the `0.0.0.0/0` route, and click **Save changes**.
+![Infrastructure after Task 10](figures/fig13.png)
 
-**Delete the NAT gateway**
+1. On `instance-1`, go into the mount, become root, and create a file:
 
-1. Click **NAT gateways**, select `lab3-nat-gateway`.
-2. Click **Actions → Delete NAT gateway**, type `delete`, and click **Delete**.
+   ```bash
+   cd ~/efsmount
+   sudo su
+   echo "Creating a sample file from instance 1" >> file_from_1.txt
+   ```
 
-**Release the Elastic IP address**
+   > 📸 **Screenshot `08-efs-write.png`:** the `instance-1` terminal showing these commands.
 
-1. When the NAT gateway is *Deleted*, click **Elastic IPs**.
-2. Select the address that was allocated for the NAT gateway and click **Actions → Release Elastic IP addresses → Release**.
+2. On `instance-3`, list the files in the mount:
 
-**Detach and delete the internet gateway**
+   ```bash
+   cd ~/efsmount
+   ls
+   cat file_from_1.txt
+   ```
 
-1. Click **Internet gateways**, select `lab3-internet-gateway`.
-2. Click **Actions → Detach from VPC**, then **Detach internet gateway**.
-3. Select it again, click **Actions → Delete internet gateway**, type `delete`, and confirm.
+   You see `file_from_1.txt`, created on `instance-1`: both instances share the same file system.
 
-**Delete the VPC**
+   > 📸 **Screenshot `09-efs-read.png`:** the `instance-3` terminal showing the file.
 
-1. Click **Your VPCs**, select `lab3-vpc`.
-2. Click **Actions → Delete VPC**, type `delete`, and click **Delete**. This also deletes its subnets, route tables and security groups.
+# Clean Up
+
+Take all screenshots **before** you clean up.
+
+**Terminate the instances**
+
+1. Close the Instance Connect terminals and open **EC2 → Instances**.
+2. Select `instance-1`, `instance-2` and `instance-3`.
+3. Click **Instance state → Terminate instance**, then **Terminate**.
+
+**Delete the EFS file system**
+
+1. Open **EFS**, select `clab-efs` and click **Delete**.
+2. Enter the file system ID and click **Confirm**.
+
+**Delete the EBS volume**
+
+1. Open **EC2 → Volumes** and select **Backup Volume**.
+2. Click **Actions → Delete volume** and confirm.
+
+**Delete the security groups**
+
+1. Wait until the instances are terminated and the file system is deleted.
+2. Open **Security Groups**, select `efs-sg` and `ec2instances-sg`.
+3. Click **Actions → Delete security groups**, then **Delete**.
+
+**Delete the S3 bucket**
+
+1. Open **S3 → Buckets** and select your bucket.
+2. Click **Empty**, type `permanently delete`, and click **Empty**. Click **Exit**.
+3. Select the bucket again, click **Delete**, type the bucket name, and click **Delete bucket**.
 
 # Submission
 
-1. Make the lab folder and copy your 11 screenshots into `images/`:
+1. Make the lab folder and copy your 9 screenshots into `images/`:
 
    ```bash
    mkdir -p ~/cc-gic-YOUR_ID/cc-lab-YOUR_ID/lab3/images
@@ -314,17 +553,15 @@ The gateways can only be deleted when no route uses them.
    └── lab3/
        ├── README.md
        └── images/
-           ├── 01-vpc.png
-           ├── 02-internet-gateway.png
-           ├── 03-public-subnet.png
-           ├── 04-public-route-table.png
-           ├── 05-ec2-public.png
-           ├── 06-test-public.png
-           ├── 07-private-subnet.png
-           ├── 08-nat-gateway.png
-           ├── 09-private-route-table.png
-           ├── 10-ec2-private.png
-           └── 11-test-private.png
+           ├── 01-s3-bucket-list.png
+           ├── 02-s3-objects.png
+           ├── 03-s3-website.png
+           ├── 04-ebs-volumes.png
+           ├── 05-ebs-lsblk.png
+           ├── 06-ebs-second-instance.png
+           ├── 07-efs-file-system.png
+           ├── 08-efs-write.png
+           └── 09-efs-read.png
    ```
 
 4. Commit and push:
@@ -332,8 +569,8 @@ The gateways can only be deleted when no route uses them.
    ```bash
    cd ~/cc-gic-YOUR_ID
    git add .
-   git commit -m "Lab 3: VPC with public and private subnets"
+   git commit -m "Lab 3: AWS storage options"
    git push
    ```
 
-5. Check on GitHub that `lab3/README.md` shows all 11 screenshots.
+5. Check on GitHub that `lab3/README.md` shows all 9 screenshots.
