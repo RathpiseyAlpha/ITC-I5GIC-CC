@@ -447,8 +447,10 @@ You install the Amazon EFS client on the instances, create a mount point and mou
 
    ```bash
    sudo apt-get update
-   sudo apt-get -y install git binutils rustc cargo pkg-config libssl-dev
-   git clone https://github.com/aws/efs-utils
+   sudo apt-get -y install git binutils pkg-config libssl-dev gettext make gcc g++ cmake golang-go wget perl curl
+   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+   . "$HOME/.cargo/env"
+   git clone --branch v3.4.0 https://github.com/aws/efs-utils
    cd efs-utils
    ./build-deb.sh
    sudo apt-get -y -q install ./build/amazon-efs-utils*deb
@@ -457,13 +459,15 @@ You install the Amazon EFS client on the instances, create a mount point and mou
    | Line | What it does |
    |---|---|
    | 1 | Updates the package lists |
-   | 2 | Installs Git (to clone the source) and the tools needed to build the package |
-   | 3 | Clones `efs-utils` from GitHub. The Amazon EFS client simplifies mounting EFS, adds encryption in transit, and improves performance on Linux |
-   | 4 | Moves into the `efs-utils` folder |
-   | 5 | Builds the `amazon-efs-utils` package |
-   | 6 | Installs the package |
+   | 2 | Installs Git (to clone the source), the C compiler, CMake and Go that the build needs |
+   | 3 | Installs the current Rust toolchain with `rustup`. Do not install `rustc` or `cargo` with `apt`: the Ubuntu 24.04 version is too old for this build and fails with a `Cargo.lock` error |
+   | 4 | Adds the new Rust tools to your current terminal |
+   | 5 | Clones `efs-utils` version 3.4.0 from GitHub. The Amazon EFS client simplifies mounting EFS, adds encryption in transit, and improves performance on Linux |
+   | 6 | Moves into the `efs-utils` folder |
+   | 7 | Builds the `amazon-efs-utils` package |
+   | 8 | Installs the package |
 
-   The build takes a few minutes.
+   The build takes several minutes. Wait for it to finish before you go on.
 
 3. Create a mount point:
 
