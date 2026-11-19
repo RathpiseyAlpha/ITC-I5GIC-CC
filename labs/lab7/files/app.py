@@ -156,9 +156,9 @@ PAGE = """
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lab 5 · Database demo</title>
+<title>Lab 7 · Database demo</title>
 <main style="max-width:42rem;margin:2rem auto;padding:0 1rem;font-family:system-ui">
-  <h1>Lab 5 · Database demo</h1>
+  <h1>Lab 7 · Database demo</h1>
   {% if session.get('email') %}
     <p>Signed in as {{ session.username }}.</p>
     <form method="post" action="{{ url_for('logout') }}">
