@@ -54,9 +54,9 @@ Every lab is done individually in your own **AWS Academy Learner Lab**. Start wi
 | 2 | Application Load Balancer with an EC2 Auto Scaling group | [Instructions](labs/lab2/lab2-instruction.md) |
 | 3 | Understanding AWS storage options (S3, EBS, EFS) | [Instructions](labs/lab3/lab3-instruction.md) · [Challenge](labs/lab3/lab3-challenge.md) |
 | 4 | Amazon VPC with public and private subnets | [Instructions](labs/lab4/lab4-instruction.md) |
-| 5 | Build a social app with AWS databases | [Instructions](labs/lab5/lab5-instruction.md) |
-| 6 | Processing Amazon S3 events using AWS Lambda | [Instructions](labs/lab6/lab6-instruction.md) |
-| 7 | RESTful microservices with API Gateway and DynamoDB | [Instructions](labs/lab7/lab7-instruction.md) |
+| 5 | Processing Amazon S3 events using AWS Lambda | [Instructions](labs/lab5/lab5-instruction.md) |
+| 6 | RESTful microservices with API Gateway and DynamoDB | [Instructions](labs/lab6/lab6-instruction.md) |
+| 7 | Build a social app with AWS databases | [Instructions](labs/lab7/lab7-instruction.md) |
 | 8 | Getting started with cost estimation | [Instructions](labs/lab8/lab8-instruction.md) |
 | 9 | Getting started with Amazon ECS | [Instructions](labs/lab9/lab9-instruction.md) |
 | 10 | Provisioning AWS with CloudFormation and Terraform | [Instructions](labs/lab10/lab10-instruction.md) |

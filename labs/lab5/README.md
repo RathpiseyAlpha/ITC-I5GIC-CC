@@ -1,46 +1,45 @@
-# Cloud Lab 5 Submission — AWS Databases
+# Cloud Lab 5 Submission — S3 Events with AWS Lambda
 
-Copy this template to `cc-lab-YOUR_ID/lab5/README.md` in your student repository. Follow [the lab instructions](lab5-instruction.md) and save your screenshots in `lab5/images/`.
+Copy this template to `cc-lab-YOUR_ID/lab5/README.md` in your own repository. Follow [the instructions](lab5-instruction.md). Put your screenshots in `lab5/images/` and your function code in `lab5/lambda_function.py`.
 
 - **Student name:**
 - **Student ID:**
-- **Region:**
+- **Learner Lab user name:**
+- **Bucket name:**
+- **Date completed:**
 
-## Lab evidence
+---
 
-![EC2 security group and SSH rule](images/01-security-group.png)
+## Files sorted by type
 
-![Running EC2 instance](images/02-ec2-running.png)
+![Uploaded file moved into its type folder](images/01-s3-organized.png)
 
-![Private S3 media bucket](images/03-s3-media-bucket.png)
+Which files did you upload, and which folders did the function create?
 
-![RDS MySQL instance and endpoint](images/04-rds-mysql.png)
+## CloudWatch logs
 
-![Aurora writer and reader endpoints](images/05-aurora-endpoints.png)
+![CloudWatch log events](images/02-cloudwatch-logs.png)
 
-![DynamoDB table and partition key](images/06-dynamodb-table.png)
+## Function code
 
-![App starting on EC2](images/07-app-start.png)
+My function code is in [lambda_function.py](lambda_function.py).
 
-![Demo post and image in the browser](images/08-app-post.png)
+---
 
-![Matching DynamoDB item](images/09-post-item.png)
+## Questions
 
-## Trace one post
+1. Describe, step by step, what happens from the moment you click **Upload** until the log line appears in CloudWatch. Name each AWS service involved.
+2. Why was the trigger limited to **PUT** events? What would happen with **All object create events**?
+3. The function uses `LabRole`. Which two permissions does this role need for the function to work?
+4. You never started or stopped a server in this lab. Who runs your code, and what do you pay for?
 
-| Where | What you found |
-|---|---|
-| RDS `user_post` | Post ID and demo username |
-| DynamoDB `posts` | Matching `post_id`, title and `media_key` |
-| S3 | Object key matching `media_key` |
+## Problems and how I solved them (optional)
 
-1. Which database does signup write to, and which Aurora endpoint does login use? Explain what the reader endpoint does when there is only one instance.
-2. Why does the app use the same ID in RDS and DynamoDB? What would happen if one of the two writes failed after the other succeeded?
-3. Explain how your browser can display an image even though the S3 bucket blocks public access.
+## AI note (optional)
 
-## Cleanup
+One suggestion an AI tool gave you and how you checked it.
 
-- [ ] EC2 instance terminated and lab security groups removed.
-- [ ] RDS instance and Aurora cluster deleted.
+## Clean up
+
+- [ ] Lambda function deleted.
 - [ ] S3 bucket emptied and deleted.
-- [ ] DynamoDB table deleted.

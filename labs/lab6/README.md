@@ -1,37 +1,57 @@
-# Cloud Lab 6 Submission — S3 Events with AWS Lambda
+# Cloud Lab 6 Submission — API Gateway and DynamoDB
 
-Copy this template to `cc-lab-YOUR_ID/lab6/README.md` in your own repository. Follow [the instructions](lab6-instruction.md). Put your screenshots in `lab6/images/` and your function code in `lab6/lambda_function.py`.
+Copy this template to `cc-lab-YOUR_ID/lab6/README.md` in your own repository. Follow [the instructions](lab6-instruction.md). Put your screenshots in `lab6/images/` and your three scripts in `lab6/`.
 
 - **Student name:**
 - **Student ID:**
 - **Learner Lab user name:**
-- **Bucket name:**
 - **Date completed:**
 
 ---
 
-## Files sorted by type
+## 1. DynamoDB table
 
-![Uploaded file moved into its type folder](images/01-s3-organized.png)
+![Fruits table](images/01-dynamodb-table.png)
 
-Which files did you upload, and which folders did the function create?
+## 2. Table items
 
-## CloudWatch logs
+![Items in the Fruits table](images/02-dynamodb-items.png)
 
-![CloudWatch log events](images/02-cloudwatch-logs.png)
+## 3. REST API resources
 
-## Function code
+![API resources and methods](images/03-api-resources.png)
 
-My function code is in [lambda_function.py](lambda_function.py).
+## 4. GET mapping template
+
+![GET mapping template](images/04-get-mapping-template.png)
+
+## 5. POST /fruit
+
+![POST request](images/05-post-request.png)
+
+## 6. GET /fruit/{name}
+
+![GET request](images/06-get-request.png)
+
+## 7. Stage and Invoke URL
+
+![Stage v1](images/07-stage.png)
+
+## Scripts
+
+- [populate_table.py](populate_table.py)
+- [get_fruit.py](get_fruit.py)
+- [add_fruit.py](add_fruit.py)
 
 ---
 
 ## Questions
 
-1. Describe, step by step, what happens from the moment you click **Upload** until the log line appears in CloudWatch. Name each AWS service involved.
-2. Why was the trigger limited to **PUT** events? What would happen with **All object create events**?
-3. The function uses `LabRole`. Which two permissions does this role need for the function to work?
-4. You never started or stopped a server in this lab. Who runs your code, and what do you pay for?
+1. `Apple / Red` and `Apple / Green` are two separate items. Why does DynamoDB accept two items with the same `Name`?
+2. Your API's `GET` method sends a `POST` request to DynamoDB. Explain why.
+3. What does a mapping template do? Use your GET template as the example: where does each value come from?
+4. What happened when you called `GET /fruit/Apple` **without** the `color` parameter? Why?
+5. This API has no server and no Lambda function. Name one advantage and one limit of integrating API Gateway directly with DynamoDB.
 
 ## Problems and how I solved them (optional)
 
@@ -41,5 +61,5 @@ One suggestion an AI tool gave you and how you checked it.
 
 ## Clean up
 
-- [ ] Lambda function deleted.
-- [ ] S3 bucket emptied and deleted.
+- [ ] `FruitsAPI` deleted.
+- [ ] `Fruits` table deleted.

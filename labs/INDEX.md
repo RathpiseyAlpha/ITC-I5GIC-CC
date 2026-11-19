@@ -11,15 +11,15 @@ Start with the [student setup](SETUP.md): it explains the AWS Academy Learner La
 | 3 | Understanding AWS storage options | S3, EBS, EFS | [Instruction](lab3/lab3-instruction.md) · [Report](lab3/README.md) | 9 |
 | 3 (challenge) | Secure and manage an S3 bucket for public content | S3 policies, versioning, lifecycle | [Instruction](lab3/lab3-challenge.md) · [Report](lab3/challenge-README.md) | 6 (+1) |
 | 4 | Amazon VPC with public and private subnets | VPC, internet gateway, NAT gateway, Systems Manager | [Instruction](lab4/lab4-instruction.md) · [Report](lab4/README.md) | 11 |
-| 5 | Build a social app with AWS databases | RDS for MySQL, Aurora MySQL, DynamoDB, S3, EC2 | [Instruction](lab5/lab5-instruction.md) · [Report](lab5/README.md) | 9 |
-| 6 | Processing Amazon S3 events using AWS Lambda | Lambda, S3, CloudWatch | [Instruction](lab6/lab6-instruction.md) · [Report](lab6/README.md) | 2 |
-| 7 | RESTful microservices with API Gateway and DynamoDB | API Gateway, DynamoDB, CloudShell | [Instruction](lab7/lab7-instruction.md) · [Report](lab7/README.md) | 7 |
+| 5 | Processing Amazon S3 events using AWS Lambda | Lambda, S3, CloudWatch | [Instruction](lab5/lab5-instruction.md) · [Report](lab5/README.md) | 2 |
+| 6 | RESTful microservices with API Gateway and DynamoDB | API Gateway, DynamoDB, CloudShell | [Instruction](lab6/lab6-instruction.md) · [Report](lab6/README.md) | 7 |
+| 7 | Build a social app with AWS databases | RDS for MySQL, Aurora MySQL, DynamoDB, S3, EC2 | [Instruction](lab7/lab7-instruction.md) · [Report](lab7/README.md) | 9 |
 | 8 | Getting started with cost estimation | AWS Pricing Calculator | [Instruction](lab8/lab8-instruction.md) · [Report](lab8/README.md) | 6 |
 | 9 | Getting started with Amazon ECS | ECR, ECS on Fargate, ALB, Cloud9 | [Instruction](lab9/lab9-instruction.md) · [Report](lab9/README.md) | 6 |
 | 10 | Provisioning AWS with infrastructure as code | CloudFormation, Terraform | [Instruction](lab10/lab10-instruction.md) · [Report](lab10/README.md) | 16 |
 | 11 | CI/CD with AWS CodePipeline | CodePipeline, CodeBuild, CodeDeploy, GitHub | [Instruction](lab11/lab11-instruction.md) · [Report](lab11/README.md) | 6 |
 
-If you already submitted the Lambda lab in `lab5/` or the API Gateway lab in `lab6/`, move API Gateway to `lab7/` first, then move Lambda to `lab6/`. Keep the contents of both folders. Use `lab5/` for the database lab.
+If you previously submitted a lab under the former numbering (Databases 5, Lambda 6, API Gateway 7), use the current numbering instead: **Lambda 5**, **API Gateway 6**, and **Databases 7**. Keep your original screenshots and reports when moving folders.
 
 ## Submission at a glance
 
