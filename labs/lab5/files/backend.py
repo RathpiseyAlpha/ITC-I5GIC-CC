@@ -37,7 +37,9 @@ def connect(host, password):
 @app.exception_handler(ClientError)
 @app.exception_handler(BotoCoreError)
 async def storage_error(request, error):
-    return JSONResponse(status_code=503, content={"detail": "Check database connectivity and the EC2 role."})
+    return JSONResponse(
+        status_code=503, content={"detail": "Check database connectivity and your AWS Academy CLI credentials."}
+    )
 
 
 class Login(BaseModel):

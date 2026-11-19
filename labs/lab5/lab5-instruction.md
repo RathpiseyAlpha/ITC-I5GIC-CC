@@ -41,7 +41,7 @@ Keep your Learner Lab user name visible in console screenshots. Keep commands vi
 
 Complete the [student setup](../SETUP.md), start your Learner Lab, and use **US East (N. Virginia)**. Follow the resource names given in the tasks and finish the cleanup in the same session to preserve your lab budget.
 
-The task sequence and figures come from the course handout, *Lab 5 New - AWS Database*, adapted from [Educative's DatabaseOptions lab](https://github.com/Educative-Content/DatabaseOptions). The GitHub version uses an SSH tunnel for the browser, the EC2 instance profile for AWS credentials, and a private media bucket.
+The task sequence and figures come from the course handout, *Lab 5 New - AWS Database*, adapted from [Educative's DatabaseOptions lab](https://github.com/Educative-Content/DatabaseOptions). This walkthrough uses an SSH tunnel for the browser, temporary credentials from AWS Academy Learner Lab, and a private media bucket.
 
 ### How the microservice stores data
 
@@ -73,8 +73,7 @@ The task sequence and figures come from the course handout, *Lab 5 New - AWS Dat
 1. Open **EC2 → Instances → Launch instances**. Name the instance `aws-database-options-lab-instance`.
 2. Choose **Ubuntu Server 24.04 LTS**, 64-bit (x86), `t2.micro` if permitted by your Learner Lab, and an **8 GiB gp3** root volume.
 3. Select a key pair you can use from your computer. Under **Network settings**, use the default VPC, enable **Auto-assign public IP**, and select the security group from Task 1.
-4. Under **Advanced details → IAM instance profile**, choose `LabInstanceProfile` so the service can use the instance role to access DynamoDB and S3.
-5. Launch the instance. Wait for the state to show **Running**, then note its public IPv4 address.
+4. Launch the instance. Wait for the state to show **Running**, then note its public IPv4 address. You will configure the AWS credentials for DynamoDB and S3 in Task 9.
 
 > 📸 **Screenshot `02-ec2-running.png`:** the running instance and its attached security group.
 
@@ -121,7 +120,7 @@ In the SSH session on EC2, install the MySQL client and download the RDS certifi
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y mysql-client python3-venv git curl nodejs npm
+sudo apt-get install -y mysql-client python3-venv git curl nodejs npm nano
 curl -fsSLo "$HOME/rds-us-east-1.pem" \
   https://truststore.pki.rds.amazonaws.com/us-east-1/us-east-1-bundle.pem
 export LAB_RDS_CA="$HOME/rds-us-east-1.pem"
@@ -217,7 +216,32 @@ The FastAPI routes combine the components you created in Part B. Open `backend.p
 | `GET /get_posts` | Read the RDS post IDs, load their content from DynamoDB, and sign short-lived URLs for S3 images. |
 | `POST /logout` | End the session. |
 
-Set your bucket name, enter the two database passwords at the hidden prompts, and start the API on port 8000. The AWS SDK gets temporary credentials from `LabInstanceProfile`.
+### Copy the AWS Academy credentials
+
+1. In **AWS Academy Learner Lab**, open **AWS Details → Show** next to **AWS CLI**. Copy the block containing the access key ID, secret access key, and session token.
+2. In your **EC2 SSH terminal**, open the credentials file outside the course repository:
+
+   ```bash
+   install -d -m 700 "$HOME/.aws"
+   (umask 077; touch "$HOME/.aws/credentials")
+   chmod 600 "$HOME/.aws/credentials"
+   nano "$HOME/.aws/credentials"
+   ```
+
+3. Paste the Learner Lab block into the file. Replace the old `[default]` block if there is one. It should have this shape, with the values copied from **Show CLI**:
+
+   ```ini
+   [default]
+   aws_access_key_id = YOUR_LEARNER_LAB_ACCESS_KEY_ID
+   aws_secret_access_key = YOUR_LEARNER_LAB_SECRET_ACCESS_KEY
+   aws_session_token = YOUR_LEARNER_LAB_SESSION_TOKEN
+   ```
+
+4. Save with **Ctrl+O**, press **Enter**, then exit with **Ctrl+X**. Boto3 reads all three values from this file for DynamoDB and S3. Keep the file contents out of your code, Git repository, and screenshots. [Boto3 credentials guide](https://docs.aws.amazon.com/boto3/latest/guide/credentials.html#shared-credentials-file)
+
+### Start the backend
+
+Set your bucket name, enter the two database passwords at the hidden prompts, and start the API on port 8000. The command generates `LAB_SESSION_KEY` for the app's login sessions. The AWS session token stays in the credentials file.
 
 ```bash
 export AWS_REGION=us-east-1
@@ -281,7 +305,7 @@ The setup script changes the client's Axios base URL to `/api` and routes those 
 | The browser cannot reach port 5173 | The SSH tunnel is still open and Vite is listening on EC2. |
 | Vite responds but signup or login fails | FastAPI is running on port 8000. Check the Aurora hostnames and password. |
 | A MySQL connection times out | The database security group allows TCP 3306 from the EC2 security group, and both resources use the same VPC. |
-| Posting fails with a storage error | Check `LabInstanceProfile`, the S3 bucket name, and the active `posts` table in `us-east-1`. |
+| Posting fails with a storage error | Check that all three Show CLI values are present under `[default]` in `~/.aws/credentials`. If they expired, copy a fresh block from the running Learner Lab, replace the old block, and restart the backend. Also check the S3 bucket name and the active `posts` table in `us-east-1`. |
 
 ## Clean Up
 
