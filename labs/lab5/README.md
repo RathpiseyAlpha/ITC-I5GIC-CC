@@ -1,4 +1,4 @@
-# Cloud Lab 5 Submission — AWS Databases
+# Cloud Lab 5 Submission — Social Posts Microservice with AWS Databases
 
 Copy this template to `cc-lab-YOUR_ID/lab5/README.md` in your student repository. Follow [the lab instructions](lab5-instruction.md) and save your screenshots in `lab5/images/`.
 
@@ -20,7 +20,7 @@ Copy this template to `cc-lab-YOUR_ID/lab5/README.md` in your student repository
 
 ![DynamoDB table and partition key](images/06-dynamodb-table.png)
 
-![App starting on EC2](images/07-app-start.png)
+![FastAPI and Vite starting on EC2](images/07-app-start.png)
 
 ![Demo post and image in the browser](images/08-app-post.png)
 
@@ -31,11 +31,11 @@ Copy this template to `cc-lab-YOUR_ID/lab5/README.md` in your student repository
 | Where | What you found |
 |---|---|
 | RDS `user_post` | Post ID and demo username |
-| DynamoDB `posts` | Matching `post_id`, title and `media_key` |
-| S3 | Object key matching `media_key` |
+| DynamoDB `posts` | Matching `post_id`, title and `media` |
+| S3 | Object key matching `media` |
 
 1. Which database does signup write to, and which Aurora endpoint does login use? Explain what the reader endpoint does when there is only one instance.
-2. Why does the app use the same ID in RDS and DynamoDB? What would happen if one of the two writes failed after the other succeeded?
+2. What does `POST /create_post` save in RDS and DynamoDB, and how does `GET /get_posts` use the shared ID to assemble the feed?
 3. Explain how your browser can display an image even though the S3 bucket blocks public access.
 
 ## Cleanup
