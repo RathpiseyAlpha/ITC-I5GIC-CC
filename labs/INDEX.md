@@ -21,6 +21,24 @@ Start with the [student setup](SETUP.md): it explains the AWS Academy Learner La
 
 If you submitted using the earlier numbering, temporarily rename your AWS Databases folder from `lab7/` to `databases-temp/` if it exists. Then move API Gateway from `lab6/` to `lab7/`, move Lambda from `lab5/` to `lab6/`, and rename `databases-temp/` to `lab5/`. Keep the reports and screenshots with their labs.
 
+## Weekly placement (Cloud Computing Moodle)
+
+Use the following week-to-lab mapping when arranging Moodle sections. **Week numbers are not lab numbers.** Week 8 has no lecture but includes a lab activity. This table records the present plan for the other labs; later labs can share a teaching week.
+
+| Week | Lab | Topic |
+|:---:|:---:|---|
+| 3 | 1 | Amazon EC2 |
+| 4 | 2 | Load Balancing and Auto Scaling |
+| 5 | 3 | AWS Storage Options and S3 Challenge |
+| 6 | 4 | Amazon VPC |
+| **7** | **5** | **AWS Databases** |
+| **8** | **6** | **S3 Events and AWS Lambda** |
+| **9** | **7** | **API Gateway and DynamoDB** |
+| 11 | 8 | AWS Cost Estimation |
+| 9 | 9 | Amazon ECS |
+| 12 | 10 | CloudFormation and Terraform |
+| 12 | 11 | CI/CD with CodePipeline |
+
 ## Submission at a glance
 
 ```text
