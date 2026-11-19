@@ -25,7 +25,7 @@ ITC-I5GIC-CC/
 
 ## 🖥️ Lecture slides
 
-The weekly lecture slides as PDF. Week 8 has no lecture.
+The weekly lecture slides as PDF. Week 8 has no lecture, but includes **Lab 6 — S3 Events and AWS Lambda**.
 
 | Week | Topic | Slides |
 |:---:|-------|:----:|
@@ -35,14 +35,33 @@ The weekly lecture slides as PDF. Week 8 has no lecture.
 | 4 | Cloud scaling and load balancing | [Week-04.pdf](slides/Week-04.pdf) |
 | 5 | Cloud storage | [Week-05.pdf](slides/Week-05.pdf) |
 | 6 | Networking and Amazon VPC | [Week-06.pdf](slides/Week-06.pdf) |
-| 7 | Databases | [Week-07.pdf](slides/Week-07.pdf) |
-| 9 | Serverless and microservices | [Week-09.pdf](slides/Week-09.pdf) |
+| 7 | Databases — **Lab 5: AWS Databases** | [Week-07.pdf](slides/Week-07.pdf) |
+| 8 | No lecture — **Lab 6: S3 Events and AWS Lambda** | — |
+| 9 | Serverless and microservices — **Lab 7: API Gateway and DynamoDB** | [Week-09.pdf](slides/Week-09.pdf) |
 | 10 | Security and AWS IAM | [Week-10.pdf](slides/Week-10.pdf) |
 | 11 | Cost management | [Week-11.pdf](slides/Week-11.pdf) |
 | 12 | DevOps and Infrastructure as Code | [Week-12.pdf](slides/Week-12.pdf) |
 | 13 | AI/ML services in the cloud | [Week-13.pdf](slides/Week-13.pdf) |
 | 14 | Starting your cloud journey | [Week-14.pdf](slides/Week-14.pdf) |
 | — | Capstone project brief | [Capstone-Project.pdf](slides/Capstone-Project.pdf) |
+
+## 📅 Weekly lab index
+
+The **lab number** and **teaching week** are different: Lab 5 is taught in Week 7, Lab 6 in Week 8, and Lab 7 in Week 9. Week 8 is a lab-only week (no lecture). Keep lecture slide numbers unchanged.
+
+| Teaching week | Lab | Topic | Lab instructions |
+|:---:|:---:|---|---|
+| 3 | 1 | Amazon EC2 | [Lab 1](labs/lab1/lab1-instruction.md) |
+| 4 | 2 | Load Balancing and Auto Scaling | [Lab 2](labs/lab2/lab2-instruction.md) |
+| 5 | 3 | AWS Storage Options and S3 Challenge | [Lab 3](labs/lab3/lab3-instruction.md) · [Challenge](labs/lab3/lab3-challenge.md) |
+| 6 | 4 | Amazon VPC | [Lab 4](labs/lab4/lab4-instruction.md) |
+| **7** | **5** | **AWS Databases** | [Lab 5](labs/lab5/lab5-instruction.md) |
+| **8** | **6** | **S3 Events and AWS Lambda** | [Lab 6](labs/lab6/lab6-instruction.md) |
+| **9** | **7** | **API Gateway and DynamoDB** | [Lab 7](labs/lab7/lab7-instruction.md) |
+| 11 | 8 | AWS Cost Estimation | [Lab 8](labs/lab8/lab8-instruction.md) |
+| 9 | 9 | Amazon ECS | [Lab 9](labs/lab9/lab9-instruction.md) |
+| 12 | 10 | CloudFormation and Terraform | [Lab 10](labs/lab10/lab10-instruction.md) |
+| 12 | 11 | CI/CD with CodePipeline | [Lab 11](labs/lab11/lab11-instruction.md) |
 
 ## 🔬 Labs
 
