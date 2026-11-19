@@ -1,315 +1,399 @@
-# Cloud Lab 7 — Build a Social App with AWS Databases (Hands-on)
+# Cloud Lab 7 — Developing RESTful Microservices with API Gateway and DynamoDB (Hands-on)
 
 | Item | Details |
 |---|---|
 | Work | Individual, in your own AWS Academy Learner Lab |
 | Region | US East (N. Virginia) `us-east-1` |
-| Technologies | Amazon EC2, Amazon RDS for MySQL, Amazon Aurora MySQL, Amazon DynamoDB, Amazon S3 |
-| Submit | `cc-lab-YOUR_ID/lab7/` in your GitHub repository `CC-GIC-YOUR_ID`: `README.md` and 9 screenshots |
-| Before you start | Complete the [student setup](../SETUP.md). |
+| Technologies | Amazon API Gateway, Amazon DynamoDB, AWS IAM, AWS CloudShell |
+| Submit | `cc-lab-YOUR_ID/lab7/` in your GitHub repository `CC-GIC-YOUR_ID`: `README.md`, three Python scripts and 7 screenshots |
 
-> **Overview:** Deploy a small social app on EC2. Amazon Aurora stores demo accounts, Amazon RDS for MySQL links posts to their authors, DynamoDB stores post text, and a private S3 bucket holds attached images. You will sign in, publish a post, and follow its ID across these services.
+> **Overview:** API Gateway is an AWS service to create, manage and deploy APIs of several types, including HTTP, REST and WebSocket. In this lab you create a REST API with API Gateway and integrate it **directly** with a DynamoDB table, with no server and no Lambda function in between. The API exposes two endpoints:
+>
+> - `POST /fruit`: add a new fruit record.
+> - `GET /fruit/{name}`: fetch the data of one fruit.
 
 ## Lab Objectives
 
 After this lab, you can:
 
-1. Launch an EC2 instance with an instance profile and reach an app through an SSH tunnel.
-2. Connect EC2 to private RDS MySQL and Aurora MySQL endpoints over TLS.
-3. Explain the difference between an Aurora writer endpoint and a reader endpoint.
-4. Use a DynamoDB partition key to retrieve a post and find its image in a private S3 bucket.
-5. Trace a single app operation across relational databases, a NoSQL table, and object storage.
-
-![High-level architecture of Lab 7: the browser connects to the EC2 app over SSH, and EC2 connects to Aurora, RDS, DynamoDB, and S3](figures/fig01.png)
+1. Create a DynamoDB table with a partition key and a sort key, and add items with the AWS SDK for Python (boto3).
+2. Create a REST API with resources, path parameters and query parameters.
+3. Integrate API methods directly with DynamoDB actions, using mapping templates and a model.
+4. Deploy an API to a stage and call it from Python.
 
 ## Screenshots in this lab
 
-| File | Task | What it shows |
-|---|:---:|---|
-| `01-security-group.png` | 1 | The EC2 security group and its SSH inbound rule |
-| `02-ec2-running.png` | 1 | The running EC2 instance with its security group |
-| `03-s3-media-bucket.png` | 2 | The bucket's **Permissions** tab with Block Public Access enabled |
-| `04-rds-mysql.png` | 3 | The available RDS for MySQL instance and its endpoint |
-| `05-aurora-endpoints.png` | 4 | The Aurora cluster's available writer and reader endpoints |
-| `06-dynamodb-table.png` | 5 | The active `posts` table with its String partition key `post_id` |
-| `07-app-start.png` | 7 | The command starting the app on EC2 and its listening address |
-| `08-app-post.png` | 8 | The app at `http://127.0.0.1:8000/` with your demo post, image, and post ID |
-| `09-post-item.png` | 8 | The matching DynamoDB item with the same `post_id` and its `media_key` |
+| File | What it shows |
+|---|---|
+| `01-dynamodb-table.png` | The `Fruits` table: name, partition key `Name`, sort key `Color`, status *Active* |
+| `02-dynamodb-items.png` | **Explore table items** with your items and their `Name`, `Color` and `Flavor` |
+| `03-api-resources.png` | API Gateway **Resources** with `/fruit` (POST) and `/fruit/{name}` (GET) |
+| `04-get-mapping-template.png` | The GET method's **Integration request** with the mapping template visible |
+| `05-post-request.png` | A successful `POST /fruit` call adding *Grapes*, with the payload visible |
+| `06-get-request.png` | A successful `GET /fruit/{name}` call returning a fruit's details |
+| `07-stage.png` | The **Stages** page with stage `v1` and its **Invoke URL** |
 
-Every console screenshot must show your Learner Lab user name at the top right. Keep the command visible in the terminal screenshot and the address bar visible in the browser screenshot. Keep passwords, keys, and signed S3 URLs out of your evidence.
+Every console screenshot must show your Learner Lab user name at the top-right.
 
-## Getting Started
+## Where to run the Python code
 
-- Start your **AWS Academy Learner Lab** and switch the console to **US East (N. Virginia) us-east-1**. Use the resource names shown in the tasks.
-- Use a fictional email such as `student@example.com`, a throwaway password for the app, and a small PNG or JPEG you can share.
-- Plan to finish **Clean Up** in the same session. The databases consume your Learner Lab budget while they run.
+This lab runs three short Python scripts. Run them in **AWS CloudShell**: click the CloudShell icon (`>_`) in the console's top bar. CloudShell already has Python 3, boto3 and your Learner Lab credentials, so **you never type an access key**.
 
-The exercise is adapted from Educative's [DatabaseOptions lab](https://github.com/Educative-Content/DatabaseOptions). This walkthrough uses the [course starter app](files/app.py) and an SSH tunnel. The figures use [AWS architecture icons](https://aws.amazon.com/architecture/icons/).
+In CloudShell, create a file with `nano FILE.py`, paste the code, save with `Ctrl+O`, `Enter`, and leave with `Ctrl+X`. Run it with `python3 FILE.py`. If `requests` is missing, install it with `pip3 install --user requests`. You submit the three scripts: download each one with **Actions → Download file** in CloudShell.
 
-# Part A — Prepare EC2 and S3
+> ⚠️ **Never write an access key, secret key or session token in a script.** Your scripts go to GitHub, and anyone could use the keys. If you run the scripts on your own computer instead of CloudShell, copy the credentials from **AWS Details → AWS CLI** into `~/.aws/credentials`, where boto3 finds them by itself.
 
-## Task 1 — Create a Security Group and Launch an EC2 Instance
+# Part A — The Database
 
-A security group controls which connections can reach your instance. You will allow SSH from your computer and forward browser traffic through that connection.
+## Task 1 — Create a DynamoDB Table
 
-![SSH tunnel from port 8000 on your computer to port 8000 on EC2, with only TCP port 22 open from My IP](figures/fig02.png)
+The API needs a database to store and fetch fruit data. **DynamoDB** is a fully managed NoSQL database service. It also provides an API to read and update tables, which the REST API uses later.
 
-### Create the security group
+Each item has three attributes, `Name`, `Color` and `Flavor`. `Name` is the **partition key** and `Color` the **sort key**.
 
-1. Open **EC2 → Security Groups → Create security group**.
-2. Name it `aws-database-options-security-group` and select the **default VPC**.
-3. Under **Inbound rules**, add **SSH** on TCP port **22** with **My IP** as the source. Keep the default outbound rules and choose **Create security group**.
+![Infrastructure after Task 1](figures/fig01.png)
 
-> 📸 **Screenshot `01-security-group.png`:** the new security group's name and the SSH inbound rule.
+### Create the Fruits table
 
-### Launch the instance
+1. Search for **DynamoDB** and open it. Click **Create table**.
+2. Table name: `Fruits`.
+3. Partition key: `Name`, type **String**. Sort key: `Color`, type **String**.
+4. Scroll down and click **Create table**.
 
-1. Open **EC2 → Instances → Launch instances** and set the name to `aws-database-options-lab-instance`.
-2. Select **Ubuntu Server 24.04 LTS** (64-bit x86), `t2.micro` if available in your Learner Lab, and an **8 GiB gp3** root volume.
-3. Select or create a key pair you can use from your computer.
-4. Under **Network settings**, use the same VPC, enable **Auto-assign public IP**, and select the security group from the previous step.
-5. Under **Advanced details → IAM instance profile**, choose `LabInstanceProfile`. This gives the app temporary credentials for DynamoDB and S3.
-6. Choose **Launch instance**. Wait for the instance to show **Running**.
+You did not define `Flavor`: a DynamoDB table only needs the attributes of its primary key. Other attributes are added with each item.
 
-> 📸 **Screenshot `02-ec2-running.png`:** the instance name, **Running** state, and attached security group.
+> 📸 **Screenshot `01-dynamodb-table.png`:** the `Fruits` table details with its keys and status *Active*.
 
-### Connect from your computer
+### Populate the table
 
-Replace the key path and public IPv4 address below. Run this command in your **local terminal** and keep the session open for the remaining tasks.
+Wait until the table status is **Active**. Then, in CloudShell, create `populate_table.py` and run it:
 
-```bash
-ssh -i ~/path/to/your-key.pem -L 127.0.0.1:8000:127.0.0.1:8000 ubuntu@YOUR_EC2_PUBLIC_IP
+```python
+import boto3
+
+# Initializing the DynamoDB client
+# (credentials come from CloudShell or ~/.aws/credentials, never from this file)
+dynamodb = boto3.client('dynamodb', region_name='us-east-1')
+
+# Defining a function to insert items into the table using the put_item method
+def insert_fruit(name, color, flavor):
+    dynamodb.put_item(
+        TableName='Fruits',
+        Item={
+            'Name': {'S': name},
+            'Color': {'S': color},
+            'Flavor': {'S': flavor}
+        }
+    )
+
+# Inserting three items into the table
+insert_fruit('Apple', 'Red', 'Sweet')
+insert_fruit('Apple', 'Green', 'Sour')
+insert_fruit('Lemon', 'Yellow', 'Sour')
+print('Table populated successfully.')
 ```
 
-Leave port 8000 closed in the security group. The SSH tunnel carries browser traffic through port 22. If the connection fails, check your current IP against the SSH rule and confirm the instance's public IPv4 address. See the [EC2 connection guide](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/connect.html).
+| Lines | What they do |
+|---|---|
+| 5 | Create a DynamoDB client in `us-east-1` |
+| 8–16 | Define `insert_fruit`, which calls DynamoDB's `put_item` to insert one item into `Fruits` |
+| 19–21 | Insert three items |
 
-## Task 2 — Create a Private S3 Bucket
+Two items have the same `Name` but a different `Color`. The primary key is `Name` **and** `Color`, so they are separate items.
 
-The app stores attached images as objects in S3. It will give the browser a short-lived URL to read each image from the private bucket.
+Check the items in the console: open the `Fruits` table and click **Explore table items**. The three items appear under **Items returned**.
 
-1. Open **S3 → Create bucket** and choose a **General purpose** bucket in `us-east-1`.
-2. Enter `clab-imagestore-YOUR_UNIQUE_SUFFIX` as the bucket name. Replace the suffix with a unique, lowercase value.
-3. Keep **Block all public access** and default encryption enabled. Create the bucket and open its **Permissions** tab.
+> 📸 **Screenshot `02-dynamodb-items.png`:** the items with their `Name`, `Color` and `Flavor`.
 
-> 📸 **Screenshot `03-s3-media-bucket.png`:** your bucket name and **Block all public access** enabled.
+# Part B — The REST API
 
-# Part B — Create the Databases
+## Task 2 — Create a REST API
 
-## Task 3 — Create the RDS for MySQL Instance
+![Infrastructure after Task 2](figures/fig02.png)
 
-The app will store each post ID and its author's display name in a relational table on RDS for MySQL.
+1. Search for **API Gateway** and open it.
+2. Find the **REST API** type and click **Build**.
+3. Select **New API**.
+4. API name: `FruitsAPI`. API endpoint type: **Regional**.
+5. Click **Create API**.
 
-![EC2 and both SQL databases in the same VPC, with private endpoints and MySQL over TLS](figures/fig03.png)
+### Configure the resources
 
-1. Open **RDS → Databases → Create database** and select **Standard create**.
-2. Select **MySQL** and choose a MySQL 8.0 version offered in the console. Select **Dev/Test** if shown and **Single DB instance** for deployment.
-3. Set **DB instance identifier** to `aws-dbo-sql` and **Master username** to `admin`. Select **Self managed** credentials and set a lab password.
-4. Choose `db.t3.small` or the smallest instance class your Learner Lab permits. Use `gp3` at the console minimum or the storage option required by your Learner Lab.
-5. Under **Connectivity**, select **Connect to an EC2 compute resource** and choose `aws-database-options-lab-instance`. Keep public access off.
-6. Expand **Additional configuration**, set **Initial database name** to `educative_db`, and choose **Create database**.
-7. When the DB instance is **Available**, open **Connectivity & security** and save the endpoint hostname for Task 6.
+**Resources** are like endpoints: each represents a part of the URL. The API needs two: `/fruit` and `/fruit/{name}`.
 
-> 📸 **Screenshot `04-rds-mysql.png`:** the RDS instance identifier, available status, and endpoint.
+1. Under **Resources**, click **Create resource**. Resource name: `fruit`. Click **Create resource**.
+2. Select the new `/fruit` resource and click **Create resource** again, to create a resource **under** `/fruit`.
+3. Resource name: `{name}`. The curly braces make `name` a **path parameter**. Click **Create resource**.
 
-If you need to set up connectivity manually, put the database in the same VPC and allow MySQL (TCP 3306) into the database security group only from your EC2 security group. If a required action or instance class is blocked, check with your instructor before using a larger instance. See the [RDS connection guide](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/ec2-rds-connect.html).
+## Task 3 — Configure the GET Method
 
-## Task 4 — Create the Aurora MySQL Cluster
+A `GET` request on `/fruit/{name}` must return the fruit identified by the `{name}` path parameter. The method calls DynamoDB directly, so you also map the request's parameters to the payload DynamoDB expects.
 
-Aurora is a managed relational database with MySQL compatibility. The starter app creates accounts through the writer endpoint and reads them through the reader endpoint.
+![Infrastructure after Task 3](figures/fig03.png)
 
-1. Return to **RDS → Databases → Create database** and select **Standard create**.
-2. Choose **Aurora (MySQL Compatible)**, select an offered engine version, and choose **Dev/Test** if shown.
-3. Set the cluster identifier to `aws-dbo-aurora` and the master username to `admin`. Choose **Self managed** and set a different lab password.
-4. Choose `db.t3.medium` or the smallest provisioned class your Learner Lab permits. Use **Aurora Standard** if shown. Keep a single writer and choose **Don't create an Aurora Replica**.
-5. Under **Connectivity**, connect to the same EC2 instance and keep public access off.
-6. Set **Initial database name** to `educative_db` under **Additional configuration** and create the cluster.
-7. When the cluster and writer instance are **Available**, select the cluster. Find and save both hostnames in **Connectivity & security → Endpoints**.
+### Find the ARN of LabRole
 
-> 📸 **Screenshot `05-aurora-endpoints.png`:** the cluster's **Writer** and **Reader** endpoints and their status.
+API Gateway needs a role that allows it to call DynamoDB. Open **IAM → Roles**, search for `LabRole`, open it, and copy its **ARN**. It looks like `arn:aws:iam::123456789012:role/LabRole`.
 
-With one Aurora instance, both endpoints reach the writer. The reader endpoint balances read connections across replicas if you add them later. See the [Aurora setup guide](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/CHAP_GettingStartedAurora.CreatingConnecting.Aurora.html) and [reader endpoint guide](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.Endpoints.Reader.html).
+### Define the GET method
 
-## Task 5 — Create the DynamoDB Table
+1. Select the `/fruit/{name}` resource and click **Create method**.
+2. Method type: **GET**.
+3. Integration type: **AWS service**. More options appear.
+4. AWS Region: **us-east-1**. AWS service: **DynamoDB**.
+5. HTTP method: **POST**. The API's `GET` is translated into a `POST` request to DynamoDB's `GetItem` action.
+6. Action name: `GetItem`.
+7. Execution role: paste the **ARN of LabRole**.
+8. Leave the rest and click **Create method**.
 
-DynamoDB is a NoSQL database. Each post is stored as an item, and an item with an image includes the S3 object key.
+### Add a request parameter
 
-![EC2 uses LabInstanceProfile to store post items in DynamoDB and image objects in S3](figures/fig04.png)
+The `{name}` path parameter is already defined by the resource. You add a query parameter for the color.
 
-1. Open **DynamoDB → Tables → Create table**.
-2. Enter `posts` for the table name. Set the partition key to `post_id` and its type to **String**. Leave the sort key empty.
-3. Use on-demand capacity and create the table. Wait for the status to change to **Active**.
+1. Select the new **GET** method. Open the **Method request** tab and click **Edit**.
+2. Expand **URL query string parameters** and click **Add query string**.
+3. Name: `color`. Check **Required**.
+4. Click **Save**.
 
-> 📸 **Screenshot `06-dynamodb-table.png`:** the table name, **Active** status, and String partition key `post_id`.
+### Define the mapping template
 
-## Task 6 — Create the SQL Tables from EC2
+When the API receives a GET request, it must send a `GetItem` request to DynamoDB. The data passes through several parts of the API and can be changed on the way:
 
-### Install the client and set the endpoints
+![Data flow, step 1](figures/fig04.png)
 
-In the SSH session you opened in Task 1, install the MySQL client and download AWS's certificate bundle. Substitute the hostnames from Tasks 3 and 4 without `https://` or `:3306`.
+![Data flow, step 2](figures/fig05.png)
 
-```bash
-sudo apt-get update
-sudo apt-get install -y mysql-client python3-venv git curl
-curl -fsSLo "$HOME/rds-us-east-1.pem" \
-  https://truststore.pki.rds.amazonaws.com/us-east-1/us-east-1-bundle.pem
-export LAB_RDS_CA="$HOME/rds-us-east-1.pem"
-export LAB_RDS_HOST='YOUR_RDS_ENDPOINT'
-export LAB_AURORA_WRITER='YOUR_AURORA_WRITER_ENDPOINT'
-export LAB_AURORA_READER='YOUR_AURORA_READER_ENDPOINT'
-```
+![Data flow, step 3](figures/fig06.png)
 
-### Create the post index on RDS MySQL
+![Data flow, step 4](figures/fig07.png)
 
-Run the command from EC2 and enter the RDS password at the prompt. The `VERIFY_IDENTITY` option verifies the server certificate and hostname.
+![Data flow, step 5](figures/fig08.png)
 
-```bash
-mysql -h "$LAB_RDS_HOST" -u admin -p --ssl-mode=VERIFY_IDENTITY --ssl-ca="$LAB_RDS_CA" educative_db
-```
+The format in which the API receives the data is not the format `GetItem` requires. A **mapping template** converts one into the other.
 
-In the MySQL prompt, create `user_post` and return to the shell.
+1. Open the GET method's **Integration request** tab and click **Edit**.
+2. Expand **URL path parameters** and click **Add path parameter**. Name: `name`. Mapped from: `method.request.path.name`. This passes the `{name}` path parameter of the request to the integration.
+3. Expand **URL query string parameters** and click **Add query string parameter**. Name: `color`. Mapped from: `method.request.querystring.color`.
+4. Expand **Mapping templates** and click **Add mapping template**. Content type: `application/json`. Template body:
 
-```sql
-CREATE TABLE IF NOT EXISTS user_post (
-    id CHAR(32) PRIMARY KEY,
-    username VARCHAR(80) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-EXIT;
-```
-
-### Create the users table on Aurora MySQL
-
-Connect to the **writer** endpoint and enter the Aurora password when prompted.
-
-```bash
-mysql -h "$LAB_AURORA_WRITER" -u admin -p --ssl-mode=VERIFY_IDENTITY --ssl-ca="$LAB_RDS_CA" educative_db
-```
-
-Create `users`. The app saves a password hash in this table when you create a demo account.
-
-```sql
-CREATE TABLE IF NOT EXISTS users (
-    email VARCHAR(254) PRIMARY KEY,
-    username VARCHAR(80) NOT NULL,
-    password_hash VARCHAR(255) NOT NULL
-);
-EXIT;
-```
-
-# Part C — Run and Test the App
-
-## Task 7 — Configure and Start the App
-
-On EC2, clone the course repository and install the starter app's dependencies in a virtual environment.
-
-```bash
-git clone https://github.com/RathpiseyAlpha/ITC-I5GIC-CC.git
-cd ITC-I5GIC-CC/labs/lab7/files
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-```
-
-In the same SSH shell, substitute your private bucket name, enter both database passwords at the hidden prompts, and start the app. If you started a new shell, set the certificate and endpoint variables from Task 6 again.
-
-```bash
-export AWS_REGION=us-east-1
-export LAB_MEDIA_BUCKET='clab-imagestore-YOUR_UNIQUE_SUFFIX'
-export LAB_SESSION_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
-read -rsp 'RDS MySQL password: ' LAB_RDS_PASSWORD; printf '\n'
-read -rsp 'Aurora password: ' LAB_AURORA_PASSWORD; printf '\n'
-export LAB_RDS_PASSWORD LAB_AURORA_PASSWORD
-python app.py
-```
-
-> 📸 **Screenshot `07-app-start.png`:** the EC2 terminal showing `python app.py` and the local listening address.
-
-## Task 8 — Create an Account, Publish a Post, and Trace It
-
-### Try the app in your browser
-
-1. On **your computer**, open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) while the SSH tunnel is open.
-2. Under **Create a demo account**, enter a fictional email, display name, and password of at least 12 characters. Then use that account to sign in.
-3. Write a title and some text. Attach a PNG or JPEG under 2 MiB and click **Publish**.
-4. Under **Recent posts**, find your post, its attached image, and the post ID beside your display name.
-
-![The starter app showing the Write a post form and an example post with an image and post ID](figures/fig05.png)
-
-*Example from the starter app with sample data. Capture your own result.*
-
-> 📸 **Screenshot `08-app-post.png`:** your browser address bar and your published post, including the attached image and post ID.
-
-### Find the same post in the databases and bucket
-
-![The app's post ID matches the RDS id and DynamoDB post_id, and the DynamoDB media_key points to the S3 object](figures/fig06.png)
-
-1. Open **DynamoDB → Explore table items**, select `posts`, and find the item whose `post_id` matches the app.
-2. Copy that item's `media_key`. Open your **S3** bucket and check that the same key exists under `posts/`.
-3. In a second SSH session to the EC2 instance, set the RDS hostname and certificate variables from Task 6. Connect to RDS with the same `mysql` command, then run:
-
-   ```sql
-   SELECT id, username FROM user_post;
+   ```json
+   {
+       "TableName": "Fruits",
+       "Key": {
+           "Name": {
+               "S": "$input.params('name')"
+           },
+           "Color": {
+               "S": "$input.params('color')"
+           }
+       }
+   }
    ```
 
-4. Find the row with the same post ID. Record the matching ID, username, and object key in your report.
+5. Click **Save**.
 
-> 📸 **Screenshot `09-post-item.png`:** the DynamoDB item showing your post's `post_id` and `media_key`.
+`GetItem` expects JSON with two root properties: `TableName`, the table to query, and `Key`, the primary key of the item to fetch. The function `$input.params()` reads a request parameter (path, query string or header): `$input.params('name')` is the `name` path parameter and `$input.params('color')` the `color` query parameter.
 
-### Troubleshooting
+> 📸 **Screenshot `04-get-mapping-template.png`:** the GET method's **Integration request** with the mapping template visible.
 
-| Symptom | What to check |
+## Task 4 — Configure the POST Method
+
+A `POST` request on `/fruit` must add a new item to the table from the data in the request body. As for GET, you integrate directly with DynamoDB and map the body to the payload DynamoDB expects. You also define the expected format of the body.
+
+![Infrastructure after Task 4](figures/fig09.png)
+
+### Define the POST method
+
+1. Select the `/fruit` resource and click **Create method**.
+2. Method type: **POST**. Integration type: **AWS service**.
+3. AWS Region: **us-east-1**. AWS service: **DynamoDB**. HTTP method: **POST**.
+4. Action name: `PutItem`.
+5. Execution role: the **ARN of LabRole**.
+6. Click **Create method**.
+
+### Define the model schema
+
+A **model** describes the expected structure of the request body.
+
+1. In the left menu, click **Models**, then **Create model**.
+2. Name: `AddFruit`. Content type: `application/json`.
+3. Model schema:
+
+   ```json
+   {
+     "$schema": "http://json-schema.org/draft-04/schema#",
+     "title": "AddFruitModel",
+     "type": "object",
+     "properties": {
+       "name": {
+         "type": "string"
+       },
+       "color": {
+         "type": "string"
+       },
+       "flavor": {
+         "type": "string"
+       }
+     }
+   }
+   ```
+
+4. Click **Create**.
+
+The body is an object with three string properties, `name`, `color` and `flavor`. The schema's root properties:
+
+| Property | Meaning |
 |---|---|
-| Browser cannot reach `127.0.0.1:8000` | Keep the local SSH tunnel open and confirm that `python app.py` is running on EC2. |
-| MySQL connection times out | Confirm that EC2 and the databases share a VPC and that the database security group allows TCP 3306 from the EC2 security group. |
-| An S3 or DynamoDB call returns `AccessDenied` | Check that EC2 has `LabInstanceProfile` and that your Learner Lab permits the action. |
-| The post shows a broken image | Check that the `media_key` exists in S3. Reload the page to get a fresh [signed URL](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-presigned-url.html). |
+| `$schema` | The version of JSON Schema used |
+| `title` | A name for the model |
+| `type` | The body is an object |
+| `properties` | The names and types of the body's properties |
+
+### Use the model for the request body
+
+1. Click **Resources**, then the **POST** method under `/fruit`.
+2. Open **Method request** and click **Edit**.
+3. Expand **Request body** and click **Add model**. Content type: `application/json`. Model: `AddFruit`.
+4. Click **Save**.
+
+### Define the mapping template
+
+1. Open the POST method's **Integration request** tab and click **Edit**.
+2. Expand **Mapping templates** and click **Add mapping template**. Content type: `application/json`. Template body:
+
+   ```text
+   #set($inputRoot = $input.path('$'))
+   {
+       "TableName": "Fruits",
+       "Item": {
+           "Name": {"S": "$inputRoot.name"},
+           "Color": {"S": "$inputRoot.color"},
+           "Flavor": {"S": "$inputRoot.flavor"}
+       }
+   }
+   ```
+
+3. Click **Save**.
+
+`PutItem` expects JSON with `TableName`, the table, and `Item`, the new item as key-value pairs. `$input.path('$')` returns the request body as JSON; the template stores it in `$inputRoot` and reads each property from it.
+
+> 📸 **Screenshot `03-api-resources.png`:** the **Resources** tree showing `/fruit` with **POST** and `/fruit/{name}` with **GET**.
+
+# Part C — Deploy and Test
+
+## Task 5 — Deploy the API
+
+1. Under **Resources**, select `/` and click **Deploy API**.
+2. Stage: **\*New stage\***. Stage name: `v1`.
+3. Click **Deploy**.
+
+The **Stages** page opens and shows the API's **Invoke URL**.
+
+![The Stages page with the Invoke URL](figures/fig10.png)
+
+> 📸 **Screenshot `07-stage.png`:** the **Stages** page with stage `v1` and its Invoke URL.
+
+> **Note:** If you change a method after deploying, click **Deploy API** again, to stage `v1`. The changes are not live until you deploy.
+
+## Task 6 — Invoke the API
+
+### GET /fruit/{name}
+
+Create `get_fruit.py` in CloudShell. Replace the URL on line 4 with **your** Invoke URL:
+
+```python
+import json
+import requests
+
+url = 'https://XXXXXXXXXX.execute-api.us-east-1.amazonaws.com/v1'
+fruit = 'Apple'
+color = 'Red'
+final_url = f'{url}/fruit/{fruit}'
+
+response = requests.get(final_url, params={'color': color}).json()
+
+print(json.dumps(response, indent=4))
+```
+
+The script calls `GET /fruit/Apple?color=Red`. The API answers with the whole item as it is stored in DynamoDB.
+
+> 📸 **Screenshot `06-get-request.png`:** the CloudShell terminal with `python3 get_fruit.py` and the item it returned.
+
+### POST /fruit
+
+Create `add_fruit.py`, again with your Invoke URL on line 4:
+
+```python
+import json
+import requests
+
+url = 'https://XXXXXXXXXX.execute-api.us-east-1.amazonaws.com/v1'
+new_fruit = {
+    'name': 'Grapes',
+    'color': 'Green',
+    'flavor': 'Sour'
+}
+final_url = f'{url}/fruit'
+
+response = requests.post(final_url, json=new_fruit).json()
+print(json.dumps(response, indent=4))
+
+final_url = f'{url}/fruit/Grapes'
+response = requests.get(final_url, params={'color': 'Green'}).json()
+print(json.dumps(response, indent=4))
+```
+
+The script sends a `POST` with the new item in the body, then a `GET` to fetch the fruit it just added.
+
+> 📸 **Screenshot `05-post-request.png`:** the terminal with `python3 add_fruit.py`, the payload in the script, and both responses. You may use Postman or `curl` instead, as long as the payload and the response are visible.
 
 ## Clean Up
 
-1. Stop the app with **Ctrl+C**.
-2. In **RDS → Databases**, delete the RDS instance and the Aurora writer instance and cluster. For these disposable lab databases, skip final snapshots and remove retained backups if prompted. Check the console again after deletion finishes.
-3. In **DynamoDB**, delete the `posts` table.
-4. In **S3**, empty and delete the lab bucket.
-5. In **EC2**, terminate the lab instance. Delete the lab security groups once no resources use them.
+Take all screenshots **before** you clean up. Delete in the reverse order of creation.
 
-## Wrap Up
+**Delete the REST API**
 
-You used Aurora to store and read a user account, RDS for MySQL to index posts by ID, DynamoDB to store each post's content, and a private S3 bucket to hold the image. The post ID and object key let you connect the records you found in each service.
+1. Open **API Gateway → APIs** and select `FruitsAPI`.
+2. Click **Delete**, type `confirm`, and click **Delete**.
+
+**Delete the table**
+
+1. Open **DynamoDB → Tables** and select `Fruits`.
+2. Click **Delete**, type `confirm`, and click **Delete**.
 
 # Submission
 
-1. Create the lab folder in your student repository.
+1. Make the lab folder, copy your 7 screenshots into `images/` and the three scripts next to `README.md`:
 
    ```bash
    mkdir -p ~/cc-gic-YOUR_ID/cc-lab-YOUR_ID/lab7/images
    ```
 
-2. Copy the [report template](README.md) to `cc-lab-YOUR_ID/lab7/README.md`, fill it in, and save your nine screenshots under `lab7/images/`.
-3. Check the folder structure.
+2. Copy the [report template](README.md) to `cc-lab-YOUR_ID/lab7/README.md` and fill it in.
+3. Check the structure, and check that **no script contains a key**:
 
    ```text
    cc-lab-YOUR_ID/
    └── lab7/
        ├── README.md
+       ├── populate_table.py
+       ├── get_fruit.py
+       ├── add_fruit.py
        └── images/
-           ├── 01-security-group.png
-           ├── 02-ec2-running.png
-           ├── 03-s3-media-bucket.png
-           ├── 04-rds-mysql.png
-           ├── 05-aurora-endpoints.png
-           ├── 06-dynamodb-table.png
-           ├── 07-app-start.png
-           ├── 08-app-post.png
-           └── 09-post-item.png
+           ├── 01-dynamodb-table.png
+           ├── 02-dynamodb-items.png
+           ├── 03-api-resources.png
+           ├── 04-get-mapping-template.png
+           ├── 05-post-request.png
+           ├── 06-get-request.png
+           └── 07-stage.png
    ```
 
-4. From the root of your student repository, commit and push.
+4. Commit and push:
 
    ```bash
    cd ~/cc-gic-YOUR_ID
-   git add cc-lab-YOUR_ID/lab7
-   git commit -m "Lab 7: AWS databases"
+   git add .
+   git commit -m "Lab 7: REST API with API Gateway and DynamoDB"
    git push
    ```
-
-5. Open the report on GitHub and check that all nine screenshots render.

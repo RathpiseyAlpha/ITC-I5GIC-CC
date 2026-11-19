@@ -1,46 +1,65 @@
-# Cloud Lab 7 Submission — AWS Databases
+# Cloud Lab 7 Submission — API Gateway and DynamoDB
 
-Copy this template to `cc-lab-YOUR_ID/lab7/README.md` in your student repository. Follow [the lab instructions](lab7-instruction.md) and save your screenshots in `lab7/images/`.
+Copy this template to `cc-lab-YOUR_ID/lab7/README.md` in your own repository. Follow [the instructions](lab7-instruction.md). Put your screenshots in `lab7/images/` and your three scripts in `lab7/`.
 
 - **Student name:**
 - **Student ID:**
-- **Region:**
+- **Learner Lab user name:**
+- **Date completed:**
 
-## Lab evidence
+---
 
-![EC2 security group and SSH rule](images/01-security-group.png)
+## 1. DynamoDB table
 
-![Running EC2 instance](images/02-ec2-running.png)
+![Fruits table](images/01-dynamodb-table.png)
 
-![Private S3 media bucket](images/03-s3-media-bucket.png)
+## 2. Table items
 
-![RDS MySQL instance and endpoint](images/04-rds-mysql.png)
+![Items in the Fruits table](images/02-dynamodb-items.png)
 
-![Aurora writer and reader endpoints](images/05-aurora-endpoints.png)
+## 3. REST API resources
 
-![DynamoDB table and partition key](images/06-dynamodb-table.png)
+![API resources and methods](images/03-api-resources.png)
 
-![App starting on EC2](images/07-app-start.png)
+## 4. GET mapping template
 
-![Demo post and image in the browser](images/08-app-post.png)
+![GET mapping template](images/04-get-mapping-template.png)
 
-![Matching DynamoDB item](images/09-post-item.png)
+## 5. POST /fruit
 
-## Trace one post
+![POST request](images/05-post-request.png)
 
-| Where | What you found |
-|---|---|
-| RDS `user_post` | Post ID and demo username |
-| DynamoDB `posts` | Matching `post_id`, title and `media_key` |
-| S3 | Object key matching `media_key` |
+## 6. GET /fruit/{name}
 
-1. Which database does signup write to, and which Aurora endpoint does login use? Explain what the reader endpoint does when there is only one instance.
-2. Why does the app use the same ID in RDS and DynamoDB? What would happen if one of the two writes failed after the other succeeded?
-3. Explain how your browser can display an image even though the S3 bucket blocks public access.
+![GET request](images/06-get-request.png)
 
-## Cleanup
+## 7. Stage and Invoke URL
 
-- [ ] EC2 instance terminated and lab security groups removed.
-- [ ] RDS instance and Aurora cluster deleted.
-- [ ] S3 bucket emptied and deleted.
-- [ ] DynamoDB table deleted.
+![Stage v1](images/07-stage.png)
+
+## Scripts
+
+- [populate_table.py](populate_table.py)
+- [get_fruit.py](get_fruit.py)
+- [add_fruit.py](add_fruit.py)
+
+---
+
+## Questions
+
+1. `Apple / Red` and `Apple / Green` are two separate items. Why does DynamoDB accept two items with the same `Name`?
+2. Your API's `GET` method sends a `POST` request to DynamoDB. Explain why.
+3. What does a mapping template do? Use your GET template as the example: where does each value come from?
+4. What happened when you called `GET /fruit/Apple` **without** the `color` parameter? Why?
+5. This API has no server and no Lambda function. Name one advantage and one limit of integrating API Gateway directly with DynamoDB.
+
+## Problems and how I solved them (optional)
+
+## AI note (optional)
+
+One suggestion an AI tool gave you and how you checked it.
+
+## Clean up
+
+- [ ] `FruitsAPI` deleted.
+- [ ] `Fruits` table deleted.
