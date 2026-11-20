@@ -1,46 +1,89 @@
-# Cloud Lab 5 Submission — Social Posts Microservice with AWS Databases
+# Cloud Lab 5 Submission — AWS Database Lab
 
-Copy this template to `cc-lab-YOUR_ID/lab5/README.md` in your student repository. Follow [the lab instructions](lab5-instruction.md) and save your screenshots in `lab5/images/`.
+Copy this template to `cc-lab-YOUR_ID/lab5/README.md` in your student repository. Follow [the lab instructions](lab5-instruction.md) and save your screenshots in `lab5/images/` with the file names below. This report is the single document that holds all your screenshots. Each heading labels the screenshot under it.
 
 - **Student name:**
 - **Student ID:**
-- **Region:**
+- **Learner Lab user name:**
+- **Date completed:**
 
-## Lab evidence
+Make sure resource names, statuses and endpoints are readable in every screenshot. Never show your database passwords or the AWS access key, secret key or session token.
 
-![EC2 security group and SSH rule](images/01-security-group.png)
+---
 
-![Running EC2 instance](images/02-ec2-running.png)
+## 1. Security Group Rules
 
-![Private S3 media bucket](images/03-s3-media-bucket.png)
+`aws-database-options-security-group` with its inbound rules (SSH port 22, Custom TCP ports 8000 and 5173) and its outbound rule.
 
-![RDS MySQL instance and endpoint](images/04-rds-mysql.png)
+![Security group rules](images/01-security-group.png)
 
-![Aurora writer and reader endpoints](images/05-aurora-endpoints.png)
+## 2. EC2 Instance Running
 
-![DynamoDB table and partition key](images/06-dynamodb-table.png)
+`aws-database-options-lab-instance` in the **Running** state with `aws-database-options-security-group` attached.
 
-![FastAPI and Vite starting on EC2](images/07-app-start.png)
+![EC2 instance running](images/02-ec2-running.png)
 
-![Demo post and image in the browser](images/08-app-post.png)
+## 3. S3 Bucket
 
-![Matching DynamoDB item](images/09-post-item.png)
+Your `clab-imagestore-…` bucket with its public access settings and bucket policy visible.
 
-## Trace one post
+![S3 bucket permissions](images/03-s3-bucket.png)
 
-| Where | What you found |
-|---|---|
-| RDS `user_post` | Post ID and demo username |
-| DynamoDB `posts` | Matching `post_id`, title and `media` |
-| S3 | Object key matching `media` |
+## 4. RDS DB Instance
 
-1. Which database does signup write to, and which Aurora endpoint does login use? Explain what the reader endpoint does when there is only one instance.
-2. What does `POST /create_post` save in RDS and DynamoDB, and how does `GET /get_posts` use the shared ID to assemble the feed?
-3. Explain how your browser can display an image even though the S3 bucket blocks public access.
+`aws-dbo-sql` with the status **Available** and its endpoint visible.
 
-## Cleanup
+![RDS DB instance](images/04-rds-sql.png)
 
-- [ ] EC2 instance terminated and lab security groups removed.
-- [ ] RDS instance and Aurora cluster deleted.
+## 5. Aurora DB Status
+
+The `aws-dbo-aurora` cluster with the status **Available** and its writer and reader endpoints visible.
+
+![Aurora DB status](images/05-aurora-cluster.png)
+
+## 6. DynamoDB Table
+
+The `posts` table with the status **Active** and its partition key `post_id` visible.
+
+![DynamoDB table](images/06-dynamodb-table.png)
+
+## 7. Application Configuration and Testing
+
+The EC2 instance terminal after `npm start`, showing that the application started.
+
+![Application started in the terminal](images/07-app-start.png)
+
+The application running in your browser at `http://<Public_IP_of_EC2>:5173`, with the address bar visible.
+
+![Application in the browser](images/08-app-browser.png)
+
+Optional: the signup or login page and a sample post. Delete the image line below if you did not take this screenshot.
+
+![Signup and sample post](images/10-signup-post.png)
+
+## 8. Final Infrastructure
+
+One collage of the resources you created: EC2 instance, security group, RDS and Aurora databases, DynamoDB table and S3 bucket.
+
+![Final infrastructure](images/09-final-infrastructure.png)
+
+## Errors and troubleshooting (optional)
+
+Screenshots of any error messages you met, and what you did about them.
+
+---
+
+## Questions
+
+1. Signup writes to the Aurora **writer** endpoint and login reads from the **reader** endpoint. Your cluster has no Aurora Replica. Which instance answers the reader endpoint, and why does the application still work?
+2. A post is split between the `user_post` table in RDS and the `posts` table in DynamoDB. What does each one store, and how does `/get_posts` join them?
+3. The post ID is the username followed by the time (`%H:%M:%S`). What happens if the same user publishes two posts in the same second, or on two different days at the same time?
+4. Why does the post content go into DynamoDB instead of a SQL table, according to the lab's database design?
+5. The `users` table stores the password exactly as the user typed it, and the S3 bucket allows anyone to read its objects. Name one risk of each choice.
+
+## Clean up
+
+- [ ] EC2 instance terminated and `aws-database-options-security-group` deleted.
+- [ ] RDS instance `aws-dbo-sql` and Aurora cluster `aws-dbo-aurora` deleted.
 - [ ] S3 bucket emptied and deleted.
-- [ ] DynamoDB table deleted.
+- [ ] DynamoDB table `posts` deleted.

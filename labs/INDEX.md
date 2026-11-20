@@ -11,7 +11,7 @@ Start with the [student setup](SETUP.md): it explains the AWS Academy Learner La
 | 3 | Understanding AWS storage options | S3, EBS, EFS | [Instruction](lab3/lab3-instruction.md) · [Report](lab3/README.md) | 9 |
 | 3 (challenge) | Secure and manage an S3 bucket for public content | S3 policies, versioning, lifecycle | [Instruction](lab3/lab3-challenge.md) · [Report](lab3/challenge-README.md) | 6 (+1) |
 | 4 | Amazon VPC with public and private subnets | VPC, internet gateway, NAT gateway, Systems Manager | [Instruction](lab4/lab4-instruction.md) · [Report](lab4/README.md) | 11 |
-| 5 | Build a social posts microservice with AWS databases | RDS for MySQL, Aurora MySQL, DynamoDB, S3, EC2 | [Instruction](lab5/lab5-instruction.md) · [Report](lab5/README.md) | 9 |
+| 5 | AWS Database Lab: a social media app with RDS, Aurora and DynamoDB | EC2, S3, RDS for MySQL, Aurora MySQL, DynamoDB | [Instruction](lab5/lab5-instruction.md) · [Report](lab5/README.md) | 9 (+1) |
 | 6 | Processing Amazon S3 events using AWS Lambda | Lambda, S3, CloudWatch | [Instruction](lab6/lab6-instruction.md) · [Report](lab6/README.md) | 2 |
 | 7 | RESTful microservices with API Gateway and DynamoDB | API Gateway, DynamoDB, CloudShell | [Instruction](lab7/lab7-instruction.md) · [Report](lab7/README.md) | 7 |
 | 8 | Getting started with cost estimation | AWS Pricing Calculator | [Instruction](lab8/lab8-instruction.md) · [Report](lab8/README.md) | 6 |
