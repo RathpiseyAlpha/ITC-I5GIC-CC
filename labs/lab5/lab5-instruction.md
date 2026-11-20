@@ -240,23 +240,40 @@ This task will focus on creating an RDS instance. After completing this task, th
 Follow the steps below to create a MySQL DB instance using RDS:
 
 - Use the search bar for “RDS” and select “RDS” from the search results. This redirects you to the Amazon RDS service dashboard.
-- Click the “Create database” button to create a new DB instance.
-- You’ll have to start by choosing the database creation method. Select the “Standard create” option, allowing you to customize the instance configurations according to your needs.
+- Click the “Create database” button and select “Full configuration” from the menu to create a new DB instance.
+
+  ![The Create database menu with Full configuration highlighted](figures/console-create-database-menu.png)
+
+- You’ll have to start by choosing the database creation method. Select the “Full configuration” option, allowing you to customize the instance configurations according to your needs.
+
+  ![Full configuration selected as the database creation method](figures/console-full-configuration.png)
+
 - From the “Engine options” section, select “MySQL” as the database engine, as you’ll work with the MySQL database in this lab.
-- In the “Engine Version” drop-down menu, select the “MySQL 8.0.33” option.
+- In the “Engine version” drop-down menu, keep the default version. In 2026, the default is “MySQL 8.4.11.”
+
+  ![The default engine version MySQL 8.4.11](figures/console-rds-engine-version.png)
+
 - From the “Templates” section, select the “Dev/Test” option because it’ll allow you to select the deployment options.
-- In the “Availability and durability” section, select “Single DB instance” as the template for the DB instance. This creates a single instance in a single availability zone, whereas the “Multi-AZ DB instance” option creates two instances in different availability zones.
+- In the “Availability and durability” section, select “Single-AZ DB instance deployment (1 instance)” as the template for the DB instance. This creates a single instance in a single availability zone, whereas the “Multi-AZ DB instance deployment” options create more instances in different availability zones.
 - Under the “Settings” section, fill in the information for the DB instance details:
   - Enter aws-dbo-sql as the DB instance identifier.
   - Enter admin as the master username.
-  - Select “Self managed” under “Credentials management” and enter a password in the “Master password” field that’ll be used for logging in to the database, and rewrite it in the “Confirm master password” field.
-- In the “Instance configuration” section, select “Burstable classes (includes t classes)” and then select the db.t3.small option.
-- In the “Storage” section, select Magnetic as the “Storage type” and write 5 as the allocated storage.
+  - Select “Self managed” under “Credentials management” and uncheck “Auto generate password.” Enter a password in the “Master password” field that’ll be used for logging in to the database, and rewrite it in the “Confirm master password” field.
+- In the “Instance configuration” section, select “Burstable classes (includes t classes)” and then select the db.t4g.small option.
+
+  ![Burstable classes and the db.t4g.small instance type](figures/console-rds-instance-class.png)
+
+- In the “Storage” section, select General Purpose SSD (gp2) as the “Storage type” and write 20 as the allocated storage.
+
+  ![General Purpose SSD (gp2) storage with 20 GiB allocated](figures/console-rds-storage.png)
+
+> **Note:** The AWS Academy Learner Lab restricts instance classes and storage. Use exactly db.t4g.small, General Purpose SSD (gp2) and 20 GiB. Other choices can make the database creation fail.
+
 - In the “Connectivity” section, select “Connect to an EC2 compute resource” and choose the “aws-database-options-lab-instance” instance from the EC2 instances drop-down list.
 - In the “DB subnet group” section select automatic setup and in the “VPC security group (firewall)” section select “Create new” option.
 - In the “New VPC security group name” section set the name to DatabaseSG.
 - Keep the “Database authentication” section as they are.
-- In the “Monitoring” section, uncheck the “Enable Enhanced Monitoring” option.
+- In the “Monitoring” section, keep “Database Insights - Standard,” expand “Additional monitoring settings” and uncheck the “Enable Enhanced Monitoring” option. Enhanced Monitoring needs a new IAM role, which the Learner Lab cannot create.
 - Expand the “Additional configuration” section, and write educative_db in the “Initial database name” field. This is a name that Amazon will give to our database when the DB instance is created. The database will not be created if we don’t name it.
 - Make sure the “Enable deletion protection” and the “Enable encryption” options are unchecked. Leave everything else as it is in this section.
 - Click the “Create database” button to launch the DB instance. Wait for the instance to be created, which may take a few minutes.
@@ -318,21 +335,29 @@ After completing this task, the provisioned infrastructure will be as follows:
 Follow the steps below to create an Aurora DB instance:
 
 - Type “RDS” in the search bar of the AWS Management Console and click the “RDS” service.
-- From the left panel, select “Databases,” and click the “Create database” button.
-- On the “Create database” page, under the “Choose a database creation method” section, select the “Standard create” option.
-- From the engine options, select “Aurora (MySQL Compatible)” and keep the selected default version as the engine version.
+- From the left panel, select “Databases,” click the “Create database” button and select “Full configuration” from the menu.
+- On the “Create database” page, under the “Choose a database creation method” section, select the “Full configuration” option.
+- From the engine options, select “Aurora (MySQL Compatible).”
 - Under the “Templates,” select “Dev/Test.”
+- Under the “Cluster scalability type” section, select “Provisioned.” Then, under “Type of provisioned configuration,” select “Burstable classes (includes t classes)” and select db.t4g.medium from the drop-down.
+
+  ![Provisioned cluster, Burstable classes and the db.t4g.medium instance class](figures/console-aurora-instance-class.png)
+
 - Under the “Settings” section:
+  - Keep the selected default version as the engine version. In 2026, the default is “Aurora MySQL 8.4.12 (compatible with MySQL 8.4.12).”
+
+    ![The default engine version Aurora MySQL 8.4.12](figures/console-aurora-engine-version.png)
+
   - Name the Aurora cluster as aws-dbo-aurora. This identifier is used in the cluster’s endpoint.
   - Keep the value for the “Master username” as admin. This master username is used to get access to the database.
-  - Select “Self managed” under “Credentials management” and enter a password in the “Master password” field that’ll be used for logging in to the database, and rewrite it in the “Confirm master password” field.
-- Under the “Instance configuration” section, select “Burstable classes (includes t classes).” Ensure that db.t3.medium is selected from the drop-down.
+  - Select “Self managed” under “Credentials management” and uncheck “Auto generate password.” Enter a password in the “Master password” field that’ll be used for logging in to the database, and rewrite it in the “Confirm master password” field.
+- Under the “Cluster storage configuration” section, keep “Aurora Standard” selected.
 - Under the “Availability & durability” section, keep the “Don’t create an Aurora Replica” option selected.
 - Under the “Connectivity” section:
   - For “Compute resource,” select the “Connect to an EC2 compute resource” option.
   - For “EC2 instance,” select the instance you created earlier.
   - Keep the remaining settings at their default.
-- In the “Monitoring” section, uncheck the “Enable Enhanced Monitoring” option.
+- In the “Monitoring” section, keep “Database Insights - Standard,” expand “Additional monitoring settings” and uncheck the “Enable Enhanced Monitoring” option. For Aurora it is checked by default with “Create default role,” and the Learner Lab cannot create that IAM role, so the database creation fails if you leave it checked.
 - Expand the “Additional configuration” section, and write educative_db in the “Initial database name” field. This is a name that Amazon will give to our database when the DB instance is created. The database will not be created if we don’t name it.
 - Leave the remaining settings at their defaults and click the “Create database” button at the end of the page.
 
